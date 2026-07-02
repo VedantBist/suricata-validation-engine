@@ -30,6 +30,17 @@ void diag_list_add(DiagList *list, Diagnostic d)
         list->items = xrealloc(list->items, list->capacity * sizeof(Diagnostic));
     }
     list->items[list->count++] = d;
+
+    if (d.severity == DIAG_ERROR) {
+        list->errors++;
+    } else {
+        list->warnings++;
+    }
+    switch (d.category) {
+    case DIAG_LEXICAL:  list->lexical++;  break;
+    case DIAG_SYNTAX:   list->syntax++;   break;
+    case DIAG_SEMANTIC: list->semantic++; break;
+    }
 }
 
 static Diagnostic lexical_error(SrcSpan span)

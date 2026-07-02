@@ -26,4 +26,4 @@ Rule #3 | Line 3, Col 19 | SYNTAX ERROR
   Direction operator (-> or <>) missing after source port
   Acceptable tokens here: ->, <>
 
-== rules: 4 | valid: 1 | syntax-invalid: 3 | semantic-invalid: 0 | diagnostics: 4 ==
+== rules: 4 | valid: 1 | syntax-invalid: 3 | semantic-invalid: 0 | diagnostics: 4 (4 errors, 0 warnings) ==

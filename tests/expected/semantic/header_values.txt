@@ -43,4 +43,4 @@ Rule #7 | Line 7 | SEMANTIC ERROR
   Source port exceeds the valid range (1-65535)
   TCP/UDP ports are 16-bit values from 1 to 65535
 
-== rules: 8 | valid: 2 | syntax-invalid: 0 | semantic-invalid: 6 | diagnostics: 6 ==
+== rules: 8 | valid: 2 | syntax-invalid: 0 | semantic-invalid: 6 | diagnostics: 6 (6 errors, 0 warnings) ==

@@ -1,5 +1,22 @@
 #include "reporting/report_text.h"
 
+#include "models/context.h"
+
+void report_summary(FILE *out, const struct ParserContext *ctx)
+{
+    if (ctx->stopped_early) {
+        fprintf(out, "-- stopped early: max-errors cap (%d) reached --\n",
+                ctx->max_errors);
+    }
+    fprintf(out,
+            "== rules: %d | valid: %d | syntax-invalid: %d"
+            " | semantic-invalid: %d | diagnostics: %zu"
+            " (%zu errors, %zu warnings) ==\n",
+            ctx->rule_count, ctx->valid_count, ctx->invalid_count,
+            ctx->semantic_invalid_count, ctx->diagnostics.count,
+            ctx->diagnostics.errors, ctx->diagnostics.warnings);
+}
+
 void report_rule_verdict(FILE *out, int rule_number, int line,
                          RuleVerdict verdict)
 {

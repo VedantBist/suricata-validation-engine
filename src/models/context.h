@@ -65,6 +65,13 @@ typedef struct ParserContext {
     /* Semantic layer handle, owned by core; NULL in syntax-only and
      * token-dump modes (the dispatch layer then skips validation). */
     struct SemanticContext *semantics;
+
+    /* Fail-fast policy: stop parsing once this many ERROR-severity
+     * diagnostics have accumulated (0 = unlimited). Checked at rule
+     * boundaries only — a rule is never abandoned halfway, so ownership
+     * and accounting invariants survive an early stop. */
+    int max_errors;
+    int stopped_early;
 } ParserContext;
 
 ParserContext *context_create(void);

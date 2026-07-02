@@ -1,0 +1,29 @@
+{
+  "tool": "suricata-validate",
+  "schema_version": 1,
+  "mode": "syntax-only",
+  "stopped_early": false,
+  "summary": {
+    "total_rules": 4,
+    "valid_rules": 3,
+    "syntax_invalid": 1,
+    "semantic_invalid": 0,
+    "errors": 1,
+    "warnings": 0,
+    "lexical_errors": 0,
+    "lines": 4
+  },
+  "diagnostics": [
+    {
+      "rule": 2,
+      "line": 2,
+      "column": 11,
+      "category": "SYNTAX",
+      "severity": "ERROR",
+      "expected": "SrcIP",
+      "found": "->",
+      "message": "Source IP missing after protocol",
+      "explanation": "Acceptable tokens here: any, !, [, IP address, CIDR block, variable"
+    }
+  ]
+}

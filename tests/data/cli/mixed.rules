@@ -1,0 +1,4 @@
+alert tcp any any -> any 80 (msg:"ok"; sid:1;)
+alert tcp -> any 80 (msg:"syntax"; sid:2;)
+alert tcp any any -> any 70000 (msg:"semantic"; sid:3;)
+alert icmp any 80 -> any any (msg:"warning only"; sid:4;)

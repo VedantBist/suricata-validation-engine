@@ -66,6 +66,15 @@ delimiter positions. Stress baseline upgraded to advanced forms
 (warning-free by construction) with list corruptions — invariants and
 leak-freedom preserved.
 
-## Phase 7 — Hardening & polish
-10k-rule stress runs with timing budget, max-errors cap, summary statistics,
-optional JSON renderer, docs completion.
+## Phase 7 — Hardening, reporting & productionization  ✅
+Deterministic JSON reporting (schema v1) as a pure renderer over the same
+diagnostics/counters as text output; O(1) summary statistics with an
+engine-level accounting self-check (exit 2 on violation); production CLI
+(--json/--quiet/--summary/--max-errors/--timing/--version, robust argument
+validation); max-errors fail-fast that stops at rule boundaries via
+YYACCEPT with full destructor cleanup; timing instrumentation on stderr
+(stdout stays golden-diffable); stress infrastructure expanded to five
+tiers (lexer, full-pipeline with invariants + timing smoke, JSON
+integration cross-check, corruption-heavy 20%+10%, byte-determinism);
+CLI golden suite; final documentation (invariant philosophy, reporting
+architecture, README production overhaul). Grammar untouched.

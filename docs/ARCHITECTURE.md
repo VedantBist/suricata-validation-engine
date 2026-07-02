@@ -32,22 +32,28 @@ suricata-validation-engine/
 │   ├── ROADMAP.md               # phased implementation plan
 │   └── GRAMMAR.md               # grammar evolution log, one section per phase
 ├── src/
-│   ├── core/                    # orchestration: engine lifecycle, run loop, exit codes
+│   ├── core/                    # CLI (main.c), run orchestration (validate.c),
+│   │                            #   dispatch seam, token-dump mode, exit codes
 │   ├── lexer/                   # rules.l — tokenization + position tracking ONLY
 │   ├── parser/                  # grammar.y — structure recognition + error recovery ONLY
-│   ├── models/                  # Rule, Option, Diagnostic, ParserContext, results
-│   ├── semantic/                # value + cross-rule validators (ports, IP/CIDR, SIDs)
-│   ├── diagnostics/             # diagnostic collection, Expected/Found mapping, explanations
-│   ├── reporting/               # renderers: human text, run summary (JSON later)
-│   └── utils/                   # dynamic arrays, string helpers, memory helpers
+│   ├── models/                  # Rule, Endpoint/PortSpec element containers,
+│   │                            #   Option, Diagnostic, ParserContext
+│   ├── semantic/                # semantic.c (pass table), sid_registry,
+│   │   └── validators/          #   header.c / options.c / rule.c passes
+│   ├── diagnostics/             # diagnostic collection, expected-class mapping,
+│   │                            #   syntax + semantic fault tables (ALL prose)
+│   ├── reporting/               # report_text (verdicts/diagnostics/summary),
+│   │                            #   report_json (schema v1)
+│   └── utils/                   # checked allocation helpers
 ├── tests/
 │   ├── data/
-│   │   ├── valid/               # rules that must pass completely
-│   │   ├── syntax_errors/       # malformed rules + recovery cases
-│   │   ├── semantic_errors/     # parse-clean rules with invalid values
-│   │   └── stress/              # generator script for ~10k-rule files
+│   │   ├── lexer/               # token-dump goldens
+│   │   ├── parser/              # syntax + recovery goldens (--syntax-only)
+│   │   ├── semantic/            # full-pipeline goldens (--validate)
+│   │   ├── cli/                 # output-mode and policy goldens
+│   │   └── stress/              # deterministic generator (seeded) for 10k tiers
 │   ├── expected/                # golden output files, mirrors data/ layout
-│   └── run_tests.sh             # golden-file test runner (Phase 2+)
+│   └── run_tests.sh             # golden-file test runner + stress tiers
 ├── samples/                     # small demo files for manual runs
 ├── configs/                     # future: severity config, limits (e.g. max-errors)
 └── build/                       # ALL generated artifacts — gitignored, never committed
@@ -392,7 +398,50 @@ test the integrated behavior the project is actually judged on.
 
 ---
 
-## 9. Extension seams (designed now, built later)
+## 9. Reporting & operational behavior (Phase 7)
+
+- **Renderers are consumers.** Both `report_text` and `report_json` read
+  the same inputs — the diagnostics list (insertion order) and the run
+  counters — and neither can reach parser or validator state. Adding an
+  output format is a new file in `reporting/`, nothing else.
+- **JSON schema v1** is deterministic: fixed field order, no timestamps,
+  optional fields omitted when inapplicable. Memory for a report is
+  bounded by diagnostic count, never rule count — rules were freed as they
+  streamed by, so even a 10k-rule file with a JSON report holds only its
+  errors in memory.
+- **Statistics are O(1)**: severity/category counters are maintained by
+  `diag_list_add`, not by rescanning; the summary engine and the
+  max-errors cap read the same counters.
+- **max-errors lifecycle**: the cap is evaluated in the dispatch layer
+  after each completed rule — never mid-rule. When reached, the grammar's
+  line actions `YYACCEPT`; bison's accept path destroys any remaining
+  stack symbols through the same %destructors recovery uses, so early
+  stop is leak-free by construction. The lexer stops with the parser, so
+  `rule_count` counts only scanned lines and the accounting invariant
+  holds for partial runs too.
+- **Timing goes to stderr** (`--timing`): stdout stays byte-deterministic
+  and golden-diffable regardless of flags.
+- **Engine self-check**: every run verifies
+  `valid + syntax-invalid + semantic-invalid == total`; a violation is an
+  engine bug and exits 2.
+
+## 10. Invariant philosophy
+
+Invariants here are enforced, not aspirational — each has a mechanism and
+a test that fails when it breaks:
+
+| Invariant | Enforced by | Tested by |
+|-----------|-------------|-----------|
+| Zero grammar conflicts | bison `-Werror` | every build |
+| One syntax diagnostic per line | recovery discards + `yyerrok` at EOL | parser goldens |
+| Recovery never crosses lines | EOL token contract (synthetic at EOF) | recovery goldens, corruption-heavy stress |
+| One rule alive at a time | dispatch frees before next line completes | leaks under stress |
+| No leaks under panic recovery | one-destructor-per-ownership-level | leaks on corruption-heavy inputs |
+| `valid+syn+sem == total` | engine self-check (exit 2) | every stress tier |
+| `diagnostics == syn+sem` on lexically-clean input | 1-error corruption engineering | stress-full, stress-heavy |
+| Deterministic output | no timestamps/paths; insertion order | stress-determinism (byte-diff two runs) |
+
+## 11. Extension seams
 
 - **New semantic checks:** add a validator in `semantic/`, register it in the
   dispatch list — no parser changes.

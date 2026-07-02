@@ -1,0 +1,48 @@
+{
+  "tool": "suricata-validate",
+  "schema_version": 1,
+  "mode": "validate",
+  "stopped_early": false,
+  "summary": {
+    "total_rules": 4,
+    "valid_rules": 2,
+    "syntax_invalid": 1,
+    "semantic_invalid": 1,
+    "errors": 2,
+    "warnings": 1,
+    "lexical_errors": 0,
+    "lines": 4
+  },
+  "diagnostics": [
+    {
+      "rule": 2,
+      "line": 2,
+      "column": 11,
+      "category": "SYNTAX",
+      "severity": "ERROR",
+      "expected": "SrcIP",
+      "found": "->",
+      "message": "Source IP missing after protocol",
+      "explanation": "Acceptable tokens here: any, !, [, IP address, CIDR block, variable"
+    },
+    {
+      "rule": 3,
+      "line": 3,
+      "category": "SEMANTIC",
+      "severity": "ERROR",
+      "field": "DstPort",
+      "value": "70000",
+      "message": "Destination port exceeds the valid range (1-65535)",
+      "explanation": "TCP/UDP ports are 16-bit values from 1 to 65535"
+    },
+    {
+      "rule": 4,
+      "line": 4,
+      "category": "SEMANTIC",
+      "severity": "WARNING",
+      "field": "SrcPort",
+      "message": "Source port is meaningless for the icmp protocol",
+      "explanation": "ICMP has no ports; use 'any' for ports in icmp rules"
+    }
+  ]
+}

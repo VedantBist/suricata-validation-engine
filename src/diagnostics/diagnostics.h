@@ -14,6 +14,14 @@ typedef struct DiagList {
     Diagnostic *items;
     size_t count;
     size_t capacity;
+
+    /* O(1) statistics, maintained by diag_list_add — the summary engine
+     * and the max-errors cap read these; nothing rescans the list. */
+    size_t errors;
+    size_t warnings;
+    size_t lexical;
+    size_t syntax;
+    size_t semantic;
 } DiagList;
 
 void diag_list_init(DiagList *list);

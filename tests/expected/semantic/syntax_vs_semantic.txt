@@ -35,4 +35,4 @@ Rule #5 | Line 6, Col 54 | SYNTAX ERROR
   Missing semicolon after option value
   Acceptable tokens here: ;
 
-== rules: 6 | valid: 2 | syntax-invalid: 2 | semantic-invalid: 2 | diagnostics: 5 ==
+== rules: 6 | valid: 2 | syntax-invalid: 2 | semantic-invalid: 2 | diagnostics: 5 (5 errors, 0 warnings) ==

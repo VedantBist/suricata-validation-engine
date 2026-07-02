@@ -1,0 +1,9 @@
+
+Rule #2 | Line 2, Col 11 | SYNTAX ERROR
+  Expected: SrcIP
+  Found:    ->
+  Source IP missing after protocol
+  Acceptable tokens here: any, !, [, IP address, CIDR block, variable
+
+-- stopped early: max-errors cap (1) reached --
+== rules: 2 | valid: 1 | syntax-invalid: 1 | semantic-invalid: 0 | diagnostics: 1 (1 errors, 0 warnings) ==

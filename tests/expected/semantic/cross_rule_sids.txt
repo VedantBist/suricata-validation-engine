@@ -25,4 +25,4 @@ Rule #7 | Line 11 | SEMANTIC ERROR
   Duplicate sid detected
   sid 5000 was first used by rule #1 (line 2); signature ids must be unique
 
-== rules: 8 | valid: 5 | syntax-invalid: 1 | semantic-invalid: 2 | diagnostics: 3 ==
+== rules: 8 | valid: 5 | syntax-invalid: 1 | semantic-invalid: 2 | diagnostics: 3 (3 errors, 0 warnings) ==

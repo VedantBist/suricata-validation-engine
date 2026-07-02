@@ -49,4 +49,4 @@ Rule #7 | Line 7, Col 29 | SYNTAX ERROR
   Colon missing after option key
   Acceptable tokens here: (, :, end of line
 
-== rules: 8 | valid: 1 | syntax-invalid: 7 | semantic-invalid: 0 | diagnostics: 7 ==
+== rules: 8 | valid: 1 | syntax-invalid: 7 | semantic-invalid: 0 | diagnostics: 7 (7 errors, 0 warnings) ==

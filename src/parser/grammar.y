@@ -168,7 +168,12 @@ line:
       rule TOK_EOL
         {
             ctx->progress = PROGRESS_LINE_START;
-            dispatch_rule_accepted(ctx, $1);
+            if (!dispatch_rule_accepted(ctx, $1)) {
+                /* max-errors cap reached: end the parse cleanly at this
+                 * rule boundary. YYACCEPT's return path destroys any
+                 * remaining stack symbols via their destructors. */
+                YYACCEPT;
+            }
         }
     | error TOK_EOL
         {
@@ -179,8 +184,12 @@ line:
              * reports until 3 tokens shift, swallowing an early error on
              * the very next line. */
             ctx->progress = PROGRESS_LINE_START;
-            dispatch_rule_rejected(ctx, @2.rule_number, @2.first_line);
+            int keep_going = dispatch_rule_rejected(ctx, @2.rule_number,
+                                                    @2.first_line);
             yyerrok;
+            if (!keep_going) {
+                YYACCEPT;
+            }
         }
     ;
 

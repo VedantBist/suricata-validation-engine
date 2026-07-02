@@ -15,4 +15,4 @@ Rule #3 | Line 3, Col 11 | SYNTAX ERROR
   Source IP missing after protocol
   Acceptable tokens here: any, !, [, IP address, CIDR block, variable
 
-== rules: 10 | valid: 9 | syntax-invalid: 1 | semantic-invalid: 0 | diagnostics: 1 ==
+== rules: 10 | valid: 9 | syntax-invalid: 1 | semantic-invalid: 0 | diagnostics: 1 (1 errors, 0 warnings) ==

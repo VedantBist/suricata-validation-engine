@@ -1,0 +1,19 @@
+
+Rule #2 | Line 2, Col 11 | SYNTAX ERROR
+  Expected: SrcIP
+  Found:    ->
+  Source IP missing after protocol
+  Acceptable tokens here: any, !, [, IP address, CIDR block, variable
+
+Rule #3 | Line 3 | SEMANTIC ERROR
+  Field:    DstPort
+  Value:    70000
+  Destination port exceeds the valid range (1-65535)
+  TCP/UDP ports are 16-bit values from 1 to 65535
+
+Rule #4 | Line 4 | SEMANTIC WARNING
+  Field:    SrcPort
+  Source port is meaningless for the icmp protocol
+  ICMP has no ports; use 'any' for ports in icmp rules
+
+== rules: 4 | valid: 2 | syntax-invalid: 1 | semantic-invalid: 1 | diagnostics: 3 (2 errors, 1 warnings) ==

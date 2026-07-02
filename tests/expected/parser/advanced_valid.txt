@@ -10,4 +10,4 @@ Rule #9 (line 9): VALID
 Rule #10 (line 10): VALID
 Rule #11 (line 11): VALID
 
-== rules: 11 | valid: 11 | syntax-invalid: 0 | semantic-invalid: 0 | diagnostics: 0 ==
+== rules: 11 | valid: 11 | syntax-invalid: 0 | semantic-invalid: 0 | diagnostics: 0 (0 errors, 0 warnings) ==

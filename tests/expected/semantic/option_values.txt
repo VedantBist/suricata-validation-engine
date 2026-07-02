@@ -78,4 +78,4 @@ Rule #12 | Line 12 | SEMANTIC WARNING
   Destination port is meaningless for the icmp protocol
   ICMP has no ports; use 'any' for ports in icmp rules
 
-== rules: 13 | valid: 4 | syntax-invalid: 0 | semantic-invalid: 9 | diagnostics: 12 ==
+== rules: 13 | valid: 4 | syntax-invalid: 0 | semantic-invalid: 9 | diagnostics: 12 (9 errors, 3 warnings) ==

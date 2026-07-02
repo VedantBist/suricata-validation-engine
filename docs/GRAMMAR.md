@@ -4,6 +4,14 @@ One section per phase. Records the grammar subset in force, token inventory,
 and any documented conflict exceptions (with counterexample analysis).
 The zero-conflict policy from ARCHITECTURE.md §7 applies.
 
+## Phase 7 — no grammar changes (hardening only)
+
+The only `.y` delta is operational: the `line` productions consult the
+dispatch layer's continue/stop return and `YYACCEPT` when the max-errors
+cap is reached — ending the parse cleanly at a rule boundary through
+bison's accept path (which runs the same %destructors as recovery).
+Token inventory, productions, and the zero-conflict status are unchanged.
+
 ## Phase 6 — advanced header grammar: negation, ranges, lists (implemented)
 
 Conflict status: **zero** (unchanged; bison -Werror). Tokens added:

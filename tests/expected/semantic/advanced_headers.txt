@@ -81,4 +81,4 @@ Rule #11 | Line 11, Col 23 | SYNTAX ERROR
   Port expression missing (inside a list or after '!')
   Acceptable tokens here: :, !, port
 
-== rules: 12 | valid: 4 | syntax-invalid: 1 | semantic-invalid: 7 | diagnostics: 12 ==
+== rules: 12 | valid: 4 | syntax-invalid: 1 | semantic-invalid: 7 | diagnostics: 12 (9 errors, 3 warnings) ==

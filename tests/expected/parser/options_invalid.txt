@@ -75,4 +75,4 @@ Rule #8 | Line 8, Col 50 | SYNTAX ERROR
   Unexpected content after the options block
   Acceptable tokens here: end of line
 
-== rules: 9 | valid: 1 | syntax-invalid: 8 | semantic-invalid: 0 | diagnostics: 12 ==
+== rules: 9 | valid: 1 | syntax-invalid: 8 | semantic-invalid: 0 | diagnostics: 12 (12 errors, 0 warnings) ==
