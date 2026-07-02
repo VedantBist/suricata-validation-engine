@@ -1,0 +1,4 @@
+alert tcp any any -> any 80 (msg:"ok before errors"; sid:1;)
+alert tcp any @ -> any 80 (msg:"invalid char"; sid:2;)
+alert tcp any any -> any 80 (msg:"unterminated; sid:3;)
+alert tcp any any -> any 80 (msg:"recovered after errors"; sid:4;)

@@ -1,0 +1,19 @@
+    1:1    r1     ALERT          alert
+    1:7    r1     TCP            tcp
+    1:11   r1     ANY            any
+    1:15   r1     ANY            any
+    1:19   r1     ARROW          ->
+    1:22   r1     ANY            any
+    1:26   r1     PORT           "80"
+    1:29   r1     LPAREN         (
+    1:30   r1     OPTION_KEY     "msg"
+    1:33   r1     COLON          :
+    1:34   r1     STRING         "no trailing newline"
+    1:55   r1     SEMICOLON      ;
+    1:57   r1     OPTION_KEY     "sid"
+    1:60   r1     COLON          :
+    1:61   r1     NUMBER         "9"
+    1:62   r1     SEMICOLON      ;
+    1:63   r1     RPAREN         )
+    1:64   r1     EOL
+== tokens: 18 | rules: 1 | lines: 1 | lexical errors: 0 ==

@@ -1,0 +1,76 @@
+    1:1    r1     ALERT          alert
+    1:7    r1     TCP            tcp
+    1:11   r1     ANY            any
+    1:15   r1     ANY            any
+    1:19   r1     ARROW          ->
+    1:22   r1     ANY            any
+    1:26   r1     PORT           "80"
+    1:29   r1     LPAREN         (
+    1:30   r1     OPTION_KEY     "msg"
+    1:33   r1     COLON          :
+    1:34   r1     STRING         "ok before errors"
+    1:52   r1     SEMICOLON      ;
+    1:54   r1     OPTION_KEY     "sid"
+    1:57   r1     COLON          :
+    1:58   r1     NUMBER         "1"
+    1:59   r1     SEMICOLON      ;
+    1:60   r1     RPAREN         )
+    1:61   r1     EOL
+    2:1    r2     ALERT          alert
+    2:7    r2     TCP            tcp
+    2:11   r2     ANY            any
+    2:15   r2     INVALID_TOKEN  "@"
+    2:17   r2     ARROW          ->
+    2:20   r2     ANY            any
+    2:24   r2     PORT           "80"
+    2:27   r2     LPAREN         (
+    2:28   r2     OPTION_KEY     "msg"
+    2:31   r2     COLON          :
+    2:32   r2     STRING         "invalid char"
+    2:46   r2     SEMICOLON      ;
+    2:48   r2     OPTION_KEY     "sid"
+    2:51   r2     COLON          :
+    2:52   r2     NUMBER         "2"
+    2:53   r2     SEMICOLON      ;
+    2:54   r2     RPAREN         )
+    2:55   r2     EOL
+    3:1    r3     ALERT          alert
+    3:7    r3     TCP            tcp
+    3:11   r3     ANY            any
+    3:15   r3     ANY            any
+    3:19   r3     ARROW          ->
+    3:22   r3     ANY            any
+    3:26   r3     PORT           "80"
+    3:29   r3     LPAREN         (
+    3:30   r3     OPTION_KEY     "msg"
+    3:33   r3     COLON          :
+    3:34   r3     STRING         "unterminated; sid:3;)"
+    3:56   r3     EOL
+    4:1    r4     ALERT          alert
+    4:7    r4     TCP            tcp
+    4:11   r4     ANY            any
+    4:15   r4     ANY            any
+    4:19   r4     ARROW          ->
+    4:22   r4     ANY            any
+    4:26   r4     PORT           "80"
+    4:29   r4     LPAREN         (
+    4:30   r4     OPTION_KEY     "msg"
+    4:33   r4     COLON          :
+    4:34   r4     STRING         "recovered after errors"
+    4:58   r4     SEMICOLON      ;
+    4:60   r4     OPTION_KEY     "sid"
+    4:63   r4     COLON          :
+    4:64   r4     NUMBER         "4"
+    4:65   r4     SEMICOLON      ;
+    4:66   r4     RPAREN         )
+    4:67   r4     EOL
+== tokens: 66 | rules: 4 | lines: 4 | lexical errors: 2 ==
+
+Rule #2 | Line 2, Col 15 | LEXICAL ERROR
+  Found:    @
+  Invalid character '@'
+  The character does not belong to any recognized Suricata token class; scanning continued so the rest of the line was still checked
+
+Rule #3 | Line 3, Col 34 | LEXICAL ERROR
+  Unterminated string literal
+  The string was closed automatically at the end of the line so that following rules are not swallowed by the open quote

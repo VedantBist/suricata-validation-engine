@@ -20,8 +20,23 @@ Error: Source IP missing after protocol
 
 ## Status
 
-Phase 1 complete — architecture, module boundaries, and scaffolding.
+Phase 2 complete — lexer foundation: full Phase-2 token inventory,
+line/column/rule tracking, explicit EOL recovery anchors, lexical
+diagnostics, token-dump inspection mode, golden-file test suite (10k-rule
+stress tier green under UBSan + leak check).
 See [docs/ROADMAP.md](docs/ROADMAP.md) for the phased plan.
+
+## Build & run
+
+```sh
+make                 # debug build (UBSan) -> build/bin/suricata-validate
+make release         # optimized build
+make test            # golden-file suite; STRESS=1 make test adds the 10k tier
+build/bin/suricata-validate --dump-tokens samples/demo.rules
+```
+
+Requires flex and bison ≥ 3.6 (macOS: `brew install bison`; the Makefile
+auto-prefers the Homebrew install over the ancient system bison 2.3).
 
 ## Layout
 

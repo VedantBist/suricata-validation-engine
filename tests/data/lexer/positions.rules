@@ -1,0 +1,8 @@
+# comment lines and blank lines must consume no rule numbers
+
+alert tcp any any -> any 80 (msg:"first"; sid:1;)
+
+# indented rule with tabs — column tracking counts tab as one column
+	drop	udp any any -> any 53 (msg:"tabbed"; sid:2;)
+foobar tcp any any -> any 80 (unknown:"key"; sid:3;)
+# trailing comment line

@@ -262,7 +262,10 @@ are freed by core at shutdown.
 ### Recovery strategy (the core requirement)
 - The lexer emits an explicit `EOL` token — newlines are grammar-visible, not
   skipped whitespace. This gives the grammar a guaranteed synchronization
-  point aligned with the "one rule per line" input contract.
+  point aligned with the "one rule per line" input contract. `EOL` is emitted
+  only for lines that produced at least one token; blank and comment-only
+  lines emit nothing, so the token stream is exactly a sequence of
+  `<rule tokens> EOL` groups and the grammar needs no empty-line production.
 - The grammar's top level is a list of lines, with a dedicated recovery
   production conceptually of the form: *on error, discard everything up to
   the next EOL, record the diagnostic, reset error state (`yyerrok`), destroy
@@ -279,8 +282,10 @@ are freed by core at shutdown.
 
 ### Lexical errors
 Characters the lexer cannot classify produce a LEXICAL diagnostic (with
-position) and are skipped; the parser is not involved. The line still fails
-overall, via the same per-line accounting.
+position) and are surfaced to the parser as a real `INVALID_TOKEN` — not
+silently dropped — so syntax diagnostics can report
+`Found: INVALID_TOKEN "@"` from genuine parser state. One character at a
+time, so scanning always makes progress.
 
 ### Semantic errors
 Emitted only by `semantic/` validators operating on completed Rule objects:
@@ -308,9 +313,12 @@ Single top-level `Makefile` (implemented in Phase 2). Design:
   - cc: `-std=c11 -Wall -Wextra -Isrc` (generated files may get a slightly
     relaxed warning set — we don't fix generator output).
 - **Build modes:**
-  - `make debug` — `-g -O0`, `YYDEBUG=1` (Bison state-machine tracing on
-    demand), AddressSanitizer/UBSan. This is the default developer loop; the
-    sanitizers are how we keep the "free every Rule" contract honest.
+  - `make` (debug) — `-g -O0` + UBSan; sanitizers keep the "free every Rule"
+    contract honest. ASan is opt-in (`SAN=address,undefined`): ASan binaries
+    hang at startup on some macOS/Xcode combinations (shadow-memory init
+    spin, verified on the project dev machine), so the test runner uses
+    macOS `leaks --atExit` for heap verification instead. `YYDEBUG=1`
+    (Bison state tracing) joins in Phase 3 with the real grammar.
   - `make release` — `-O2 -DNDEBUG`.
   - `make test` — builds debug, runs the golden-file suite.
   - `make clean` — removes `build/` only.

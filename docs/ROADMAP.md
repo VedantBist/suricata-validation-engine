@@ -8,11 +8,14 @@ scope.
 Repository structure, module boundaries, data flow, diagnostics/recovery
 design, build & testing strategy. No lexer/parser code.
 
-## Phase 2 — Toolchain + minimal lexer
+## Phase 2 — Toolchain + minimal lexer  ✅
 Makefile (debug/release, generated-file management), `rules.l` for the initial
 token set (actions, protocols, IP/CIDR/PORT/ANY/VARIABLE, ARROW/BIDIR, parens,
 colon/semicolon, strings, EOL), line/column tracking, a token-dump mode to
-inspect lexer output directly. Golden tests for tokenization.
+inspect lexer output directly. Golden tests for tokenization. Shipped with:
+parser stub owning the token inventory, lexical diagnostics
+(INVALID_TOKEN + unterminated strings), stress tier green at 10k rules /
+220k tokens under UBSan + leak check.
 
 ## Phase 3 — Minimal parser + recovery backbone
 `grammar.y` for the simplified rule grammar (header + flat options), the

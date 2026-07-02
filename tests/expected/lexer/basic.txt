@@ -1,0 +1,77 @@
+    1:1    r1     ALERT          alert
+    1:7    r1     TCP            tcp
+    1:11   r1     ANY            any
+    1:15   r1     ANY            any
+    1:19   r1     ARROW          ->
+    1:22   r1     ANY            any
+    1:26   r1     PORT           "80"
+    1:29   r1     LPAREN         (
+    1:30   r1     OPTION_KEY     "msg"
+    1:33   r1     COLON          :
+    1:34   r1     STRING         "HTTP traffic"
+    1:48   r1     SEMICOLON      ;
+    1:50   r1     OPTION_KEY     "sid"
+    1:53   r1     COLON          :
+    1:54   r1     NUMBER         "1001"
+    1:58   r1     SEMICOLON      ;
+    1:59   r1     RPAREN         )
+    1:60   r1     EOL
+    2:1    r2     DROP           drop
+    2:6    r2     UDP            udp
+    2:10   r2     CIDR           "10.0.0.0/8"
+    2:21   r2     PORT           "1024"
+    2:26   r2     ARROW          ->
+    2:29   r2     VARIABLE       "$HOME_NET"
+    2:39   r2     PORT           "53"
+    2:42   r2     LPAREN         (
+    2:43   r2     OPTION_KEY     "msg"
+    2:46   r2     COLON          :
+    2:47   r2     STRING         "DNS"
+    2:52   r2     SEMICOLON      ;
+    2:54   r2     OPTION_KEY     "sid"
+    2:57   r2     COLON          :
+    2:58   r2     NUMBER         "1002"
+    2:62   r2     SEMICOLON      ;
+    2:64   r2     OPTION_KEY     "rev"
+    2:67   r2     COLON          :
+    2:68   r2     NUMBER         "2"
+    2:69   r2     SEMICOLON      ;
+    2:70   r2     RPAREN         )
+    2:71   r2     EOL
+    3:1    r3     PASS           pass
+    3:6    r3     ICMP           icmp
+    3:11   r3     IP             "192.168.1.7"
+    3:23   r3     ANY            any
+    3:27   r3     BIDIR          <>
+    3:30   r3     ANY            any
+    3:34   r3     ANY            any
+    3:38   r3     LPAREN         (
+    3:39   r3     OPTION_KEY     "msg"
+    3:42   r3     COLON          :
+    3:43   r3     STRING         "ping"
+    3:49   r3     SEMICOLON      ;
+    3:51   r3     OPTION_KEY     "sid"
+    3:54   r3     COLON          :
+    3:55   r3     NUMBER         "1003"
+    3:59   r3     SEMICOLON      ;
+    3:60   r3     RPAREN         )
+    3:61   r3     EOL
+    4:1    r4     ALERT          alert
+    4:7    r4     TCP            tcp
+    4:11   r4     VARIABLE       "$EXTERNAL_NET"
+    4:25   r4     ANY            any
+    4:29   r4     ARROW          ->
+    4:32   r4     CIDR           "172.16.0.0/12"
+    4:46   r4     PORT           "443"
+    4:50   r4     LPAREN         (
+    4:51   r4     OPTION_KEY     "content"
+    4:58   r4     COLON          :
+    4:59   r4     STRING         "TLS"
+    4:64   r4     SEMICOLON      ;
+    4:66   r4     OPTION_KEY     "sid"
+    4:69   r4     COLON          :
+    4:70   r4     NUMBER         "1004"
+    4:74   r4     SEMICOLON      ;
+    4:75   r4     RPAREN         )
+    4:76   r4     EOL
+== tokens: 76 | rules: 4 | lines: 4 | lexical errors: 0 ==
