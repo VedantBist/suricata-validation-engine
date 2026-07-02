@@ -1,0 +1,9 @@
+# Small demo file for manual runs — mixes valid, syntax-broken, and
+# semantically-broken rules to exercise recovery end to end.
+
+alert tcp any any -> any 80 (msg:"HTTP traffic"; sid:1001;)
+alert tcp -> any 80 (msg:"missing source"; sid:1002;)
+drop udp 10.0.0.0/8 any -> any 53 (msg:"DNS"; sid:1003;)
+alert tcp any any -> any 70000 (msg:"port out of range"; sid:1004;)
+pass icmp any any <> any any (msg:"ping"; sid:1005;)
+alert tcp any any -> any 443 (msg:"duplicate sid"; sid:1001;)

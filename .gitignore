@@ -1,0 +1,11 @@
+# All generated artifacts live under build/ — never commit generator output
+build/
+
+# Editor / OS noise
+.DS_Store
+*.swp
+.vscode/
+.idea/
+
+# Generated stress-test data (only the generator script is committed)
+tests/data/stress/*.rules
