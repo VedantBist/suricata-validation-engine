@@ -62,8 +62,10 @@
 %union {
     char *str;          /* lexeme of value-bearing tokens (heap-owned) */
     int discrim;        /* RuleAction / RuleProtocol / RuleDirection */
-    Endpoint endpoint;
-    PortSpec port;
+    Endpoint endpoint;  /* address container (single or list) */
+    PortSpec port;      /* port container (single or list) */
+    AddrElem addrelem;  /* one address list element under reduction */
+    PortElem portelem;  /* one port expression under reduction */
     OptionValue optval; /* option value under reduction */
     Option *opt;
     OptionList *optlist;
@@ -102,6 +104,9 @@
 %token TOK_COLON     ":"
 %token TOK_SEMICOLON ";"
 %token TOK_COMMA     ","
+%token TOK_NOT       "!"
+%token TOK_LBRACKET  "["
+%token TOK_RBRACKET  "]"
 
 /* Value-bearing tokens */
 %token <str> TOK_IP          "IP address"
@@ -122,8 +127,10 @@
 %token <str> TOK_INVALID "invalid token"
 
 %type <discrim>  action protocol direction
-%type <endpoint> address src_address dst_address
-%type <port>     port_spec src_port dst_port
+%type <endpoint> address src_address dst_address address_expr address_list
+%type <addrelem> address_item address_entry
+%type <port>     port_spec src_port dst_port port_expr port_list
+%type <portelem> port_item port_entry
 %type <str>      option_key
 %type <optval>   option_value
 %type <opt>      option
@@ -136,11 +143,15 @@
  * owns (lexeme -> Option -> OptionList -> Rule), so whichever level sits on
  * the stack when recovery pops it is released exactly once — no leaks, no
  * double frees, regardless of how deep the recursive reduction got. */
-%destructor { free($$); }              <str>
-%destructor { free($$.text); }         <endpoint> <port> <optval>
-%destructor { option_free($$); }       <opt>
-%destructor { option_list_free($$); }  <optlist>
-%destructor { rule_free($$); }         <rule>
+%destructor { free($$); }                    <str>
+%destructor { endpoint_free_contents(&$$); } <endpoint>
+%destructor { portspec_free_contents(&$$); } <port>
+%destructor { free($$.text); }               <addrelem>
+%destructor { free($$.lo); free($$.hi); }    <portelem>
+%destructor { free($$.text); }               <optval>
+%destructor { option_free($$); }             <opt>
+%destructor { option_list_free($$); }        <optlist>
+%destructor { rule_free($$); }               <rule>
 
 %%
 
@@ -244,16 +255,109 @@ dst_port:
       port_spec  { $$ = $1; ctx->progress = PROGRESS_DST_PORT; }
     ;
 
+/* ---- Advanced address structures (Phase 6) -------------------------------
+ * Composition: `any` | expr | !expr, where expr is a single element or a
+ * bracketed list of elements, each optionally negated. Nesting is
+ * impossible by construction: elements derive from address_item, which can
+ * never derive a bracket. Lists are left-recursive (flat stack at any
+ * length), COMMA-delimited with mandatory elements between delimiters —
+ * `[a,,b]`, `[a,]` and `[]` are syntax errors by grammar shape. */
+
 address:
-      TOK_ANY       { $$.kind = ENDPOINT_ANY;      $$.text = NULL; }
-    | TOK_IP        { $$.kind = ENDPOINT_IP;       $$.text = $1;   }
-    | TOK_CIDR      { $$.kind = ENDPOINT_CIDR;     $$.text = $1;   }
-    | TOK_VARIABLE  { $$.kind = ENDPOINT_VARIABLE; $$.text = $1;   }
+      TOK_ANY                   { endpoint_init_any(&$$); }
+    | address_expr              { $$ = $1; }
+    | TOK_NOT address_expr      { $$ = $2; $$.negated = 1; }
     ;
 
+address_expr:
+      address_item
+        {
+            endpoint_init_expr(&$$);
+            endpoint_append(&$$, $1);
+        }
+    | TOK_LBRACKET address_list TOK_RBRACKET
+        {
+            $$ = $2;
+            $$.is_list = 1;
+        }
+    ;
+
+address_list:
+      address_entry
+        {
+            endpoint_init_expr(&$$);
+            endpoint_append(&$$, $1);
+        }
+    | address_list TOK_COMMA address_entry
+        {
+            $$ = $1;
+            endpoint_append(&$$, $3);
+        }
+    ;
+
+address_entry:
+      address_item              { $$ = $1; }
+    | TOK_NOT address_item      { $$ = $2; $$.negated = 1; }
+    ;
+
+address_item:
+      TOK_IP        { $$.kind = ADDR_ELEM_IP;       $$.negated = 0; $$.text = $1; }
+    | TOK_CIDR      { $$.kind = ADDR_ELEM_CIDR;     $$.negated = 0; $$.text = $1; }
+    | TOK_VARIABLE  { $$.kind = ADDR_ELEM_VARIABLE; $$.negated = 0; $$.text = $1; }
+    ;
+
+/* ---- Advanced port structures --------------------------------------------
+ * Ranges reuse the existing COLON token — `80:90` lexes as PORT COLON PORT
+ * and the four range shapes are plain LALR(1) productions (shift PORT after
+ * COLON when present, reduce the open range otherwise). No new lexing, no
+ * precedence declarations, no conflicts. */
+
 port_spec:
-      TOK_ANY       { $$.kind = PORT_ANY;    $$.text = NULL; }
-    | TOK_PORT      { $$.kind = PORT_NUMBER; $$.text = $1;   }
+      TOK_ANY                   { portspec_init_any(&$$); }
+    | port_expr                 { $$ = $1; }
+    | TOK_NOT port_expr         { $$ = $2; $$.negated = 1; }
+    ;
+
+port_expr:
+      port_item
+        {
+            portspec_init_expr(&$$);
+            portspec_append(&$$, $1);
+        }
+    | TOK_LBRACKET port_list TOK_RBRACKET
+        {
+            $$ = $2;
+            $$.is_list = 1;
+        }
+    ;
+
+port_list:
+      port_entry
+        {
+            portspec_init_expr(&$$);
+            portspec_append(&$$, $1);
+        }
+    | port_list TOK_COMMA port_entry
+        {
+            $$ = $1;
+            portspec_append(&$$, $3);
+        }
+    ;
+
+port_entry:
+      port_item                 { $$ = $1; }
+    | TOK_NOT port_item         { $$ = $2; $$.negated = 1; }
+    ;
+
+port_item:
+      TOK_PORT
+        { $$.kind = PORT_ELEM_SINGLE;    $$.negated = 0; $$.lo = $1;   $$.hi = NULL; }
+    | TOK_PORT TOK_COLON TOK_PORT
+        { $$.kind = PORT_ELEM_RANGE;     $$.negated = 0; $$.lo = $1;   $$.hi = $3;   }
+    | TOK_PORT TOK_COLON
+        { $$.kind = PORT_ELEM_OPEN_HIGH; $$.negated = 0; $$.lo = $1;   $$.hi = NULL; }
+    | TOK_COLON TOK_PORT
+        { $$.kind = PORT_ELEM_OPEN_LOW;  $$.negated = 0; $$.lo = NULL; $$.hi = $2;   }
     ;
 
 /* ---- Options block (Phase 4) --------------------------------------------
@@ -332,7 +436,8 @@ static int yyreport_syntax_error(const yypcontext_t *yyctx, ParserContext *ctx)
         unsigned action : 1, protocol : 1, address : 1, port : 1, dir : 1;
         unsigned lparen : 1, rparen : 1, colon : 1, semi : 1;
         unsigned optkey : 1, value : 1, eol : 1;
-    } saw = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+        unsigned any : 1, comma : 1, rbracket : 1;
+    } saw = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
     for (int i = 0; i < n; i++) {
         switch (expected[i]) {
@@ -357,27 +462,40 @@ static int yyreport_syntax_error(const yypcontext_t *yyctx, ParserContext *ctx)
         case YYSYMBOL_TOK_NUMBER:
         case YYSYMBOL_TOK_IDENT:      saw.value = 1;    break;
         case YYSYMBOL_TOK_EOL:        saw.eol = 1;      break;
+        case YYSYMBOL_TOK_ANY:        saw.any = 1;      break;
+        case YYSYMBOL_TOK_COMMA:      saw.comma = 1;    break;
+        case YYSYMBOL_TOK_RBRACKET:   saw.rbracket = 1; break;
         default:                                        break;
         }
     }
 
-    /* optkey outranks value: option-key positions now also accept IDENT
-     * (generic keys), so {OPTION_KEY, IDENT} must classify as a key
-     * position, while {STRING, NUMBER, IDENT} after ':' stays a value. */
+    /* Ordering notes:
+     *  - optkey outranks value: option-key positions also accept IDENT.
+     *  - TOK_ANY discriminates list interior from field level: `any` is
+     *    legal only at the top of an address/port field, so an expected
+     *    set with address/port members but WITHOUT `any` is a position
+     *    inside a list or after a negation.
+     *  - {COMMA, RBRACKET} appears only between list elements.
+     *  - address/port outrank colon: port positions expect COLON too
+     *    (open-low ranges), but a bare {COLON} set is only the option
+     *    separator. */
     ExpectedClass klass =
-        saw.action                ? EXPECT_ACTION
-        : saw.protocol            ? EXPECT_PROTOCOL
-        : saw.address             ? EXPECT_ADDRESS
-        : saw.port                ? EXPECT_PORT
-        : saw.dir                 ? EXPECT_DIRECTION
-        : saw.colon               ? EXPECT_COLON
+        saw.action                 ? EXPECT_ACTION
+        : saw.protocol             ? EXPECT_PROTOCOL
+        : saw.address && saw.any   ? EXPECT_ADDRESS
+        : saw.address              ? EXPECT_ADDR_ELEM
+        : saw.port && saw.any      ? EXPECT_PORT
+        : saw.port                 ? EXPECT_PORT_ELEM
+        : saw.dir                  ? EXPECT_DIRECTION
+        : saw.comma && saw.rbracket ? EXPECT_LIST_DELIM
+        : saw.colon                ? EXPECT_COLON
         : saw.optkey && saw.rparen ? EXPECT_OPTION_OR_CLOSE
-        : saw.optkey              ? EXPECT_OPTION_KEY
-        : saw.value               ? EXPECT_OPTION_VALUE
-        : saw.semi                ? EXPECT_SEMICOLON
-        : saw.lparen && saw.eol   ? EXPECT_OPTIONS_OR_END
-        : saw.eol                 ? EXPECT_END_OF_RULE
-                                  : EXPECT_OTHER;
+        : saw.optkey               ? EXPECT_OPTION_KEY
+        : saw.value                ? EXPECT_OPTION_VALUE
+        : saw.semi                 ? EXPECT_SEMICOLON
+        : saw.lparen && saw.eol    ? EXPECT_OPTIONS_OR_END
+        : saw.eol                  ? EXPECT_END_OF_RULE
+                                   : EXPECT_OTHER;
 
     const char *expected_names[MAX_EXPECTED];
     for (int i = 0; i < n; i++) {

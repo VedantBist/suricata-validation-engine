@@ -53,9 +53,18 @@ warnings. Field/Value semantic diagnostics, INVALID (semantic) verdicts,
 `--syntax-only` mode, four semantic golden suites, full-pipeline stress
 tier with dual corruption (diagnostics == syntax + semantic invariant).
 
-## Phase 6 — Advanced grammar
-Negation, port ranges and lists, bracketed IP lists. Grammar grows;
-recovery and diagnostics architecture unchanged.
+## Phase 6 — Advanced header grammar  ✅
+Negation (field-level and per-element), port ranges (closed + both open
+forms via the existing COLON token), bracketed port/IP lists with
+per-element negation, mixed compositions. Element-container models
+(AddrElem/PortElem inside flat Endpoint/PortSpec — no AST). Nested lists
+impossible by grammar shape; zero conflicts preserved. Semantic extensions:
+range ordering/bounds via canonical [lo,hi] normalization, duplicate
+entries (error), subsumed entries + fully-negated lists (warnings),
+per-element IP/CIDR checks. New diagnostics classes for list-interior and
+delimiter positions. Stress baseline upgraded to advanced forms
+(warning-free by construction) with list corruptions — invariants and
+leak-freedom preserved.
 
 ## Phase 7 — Hardening & polish
 10k-rule stress runs with timing budget, max-errors cap, summary statistics,

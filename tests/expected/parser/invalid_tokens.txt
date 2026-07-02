@@ -12,23 +12,13 @@ Rule #1 | Line 1, Col 15 | SYNTAX ERROR
   Expected: SrcPort
   Found:    invalid token "@"
   Source port missing after source IP
-  Acceptable tokens here: any, port
-
-Rule #2 | Line 2, Col 1 | LEXICAL ERROR
-  Found:    !
-  Invalid character '!'
-  The character does not belong to any recognized Suricata token class; scanning continued so the rest of the line was still checked
+  Acceptable tokens here: any, :, !, [, port
 
 Rule #2 | Line 2, Col 1 | SYNTAX ERROR
   Expected: Action
-  Found:    invalid token "!"
+  Found:    !
   Rule must start with an action (alert, drop, or pass)
   Acceptable tokens here: end of file, alert, drop, pass
-
-Rule #2 | Line 2, Col 2 | LEXICAL ERROR
-  Found:    !
-  Invalid character '!'
-  The character does not belong to any recognized Suricata token class; scanning continued so the rest of the line was still checked
 
 Rule #3 | Line 3, Col 19 | SYNTAX ERROR
   Expected: Direction
@@ -36,4 +26,4 @@ Rule #3 | Line 3, Col 19 | SYNTAX ERROR
   Direction operator (-> or <>) missing after source port
   Acceptable tokens here: ->, <>
 
-== rules: 4 | valid: 1 | syntax-invalid: 3 | semantic-invalid: 0 | diagnostics: 6 ==
+== rules: 4 | valid: 1 | syntax-invalid: 3 | semantic-invalid: 0 | diagnostics: 4 ==

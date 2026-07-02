@@ -1,0 +1,84 @@
+Rule #1 (line 1): INVALID (semantic)
+Rule #2 (line 2): INVALID (semantic)
+Rule #3 (line 3): INVALID (semantic)
+Rule #4 (line 4): INVALID (semantic)
+Rule #5 (line 5): INVALID (semantic)
+Rule #6 (line 6): VALID
+Rule #7 (line 7): VALID
+Rule #8 (line 8): INVALID (semantic)
+Rule #9 (line 9): INVALID (semantic)
+Rule #10 (line 10): VALID
+Rule #11 (line 11): INVALID (syntax)
+Rule #12 (line 12): VALID
+
+Rule #1 | Line 1 | SEMANTIC ERROR
+  Field:    SrcPort
+  Value:    1024:80
+  Port range lower bound exceeds upper bound
+  Ranges are written low:high; an inverted range matches nothing
+
+Rule #2 | Line 2 | SEMANTIC ERROR
+  Field:    DstPort
+  Value:    70000:80000
+  Destination port exceeds the valid range (1-65535)
+  TCP/UDP ports are 16-bit values from 1 to 65535
+
+Rule #3 | Line 3 | SEMANTIC ERROR
+  Field:    DstPort
+  Value:    0:80
+  Destination port exceeds the valid range (1-65535)
+  TCP/UDP ports are 16-bit values from 1 to 65535
+
+Rule #4 | Line 4 | SEMANTIC ERROR
+  Field:    DstPort
+  Value:    80
+  Duplicate entry in Destination port list
+  Each list element must be unique
+
+Rule #5 | Line 5 | SEMANTIC ERROR
+  Field:    DstPort
+  Value:    443:8080
+  Duplicate entry in Destination port list
+  Each list element must be unique
+
+Rule #6 | Line 6 | SEMANTIC WARNING
+  Field:    DstPort
+  Value:    80
+  Destination port list entry is subsumed by a wider range in the same list
+  The entry adds nothing; the enclosing range already covers it
+
+Rule #7 | Line 7 | SEMANTIC WARNING
+  Field:    DstPort
+  Every entry in the Destination port list is negated
+  A fully negated list matches almost everything; this is usually an authoring mistake
+
+Rule #8 | Line 8 | SEMANTIC ERROR
+  Field:    DstIP
+  Value:    10.0.0.1
+  Duplicate entry in Destination IP list
+  Each list element must be unique
+
+Rule #9 | Line 9 | SEMANTIC ERROR
+  Field:    DstIP
+  Value:    999.0.0.1
+  Destination IP contains an IP octet outside the valid range (0-255)
+  Each dotted segment of an IPv4 address must be between 0 and 255
+
+Rule #9 | Line 9 | SEMANTIC ERROR
+  Field:    DstIP
+  Value:    10.0.0.0/33
+  Destination IP has a CIDR prefix outside the valid range (/0-/32)
+  An IPv4 CIDR mask must be between /0 and /32
+
+Rule #10 | Line 10 | SEMANTIC WARNING
+  Field:    SrcPort
+  Source port is meaningless for the icmp protocol
+  ICMP has no ports; use 'any' for ports in icmp rules
+
+Rule #11 | Line 11, Col 23 | SYNTAX ERROR
+  Expected: PortSpec
+  Found:    ,
+  Port expression missing (inside a list or after '!')
+  Acceptable tokens here: :, !, port
+
+== rules: 12 | valid: 4 | syntax-invalid: 1 | semantic-invalid: 7 | diagnostics: 12 ==

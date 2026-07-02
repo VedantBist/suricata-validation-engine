@@ -4,6 +4,53 @@ One section per phase. Records the grammar subset in force, token inventory,
 and any documented conflict exceptions (with counterexample analysis).
 The zero-conflict policy from ARCHITECTURE.md §7 applies.
 
+## Phase 6 — advanced header grammar: negation, ranges, lists (implemented)
+
+Conflict status: **zero** (unchanged; bison -Werror). Tokens added:
+`NOT !`, `LBRACKET [`, `RBRACKET ]`.
+
+```
+address       → any | address_expr | ! address_expr
+address_expr  → address_item | [ address_list ]
+address_list  → address_entry | address_list , address_entry
+address_entry → address_item | ! address_item
+address_item  → IP | CIDR | VARIABLE
+
+port_spec     → any | port_expr | ! port_expr
+port_expr     → port_item | [ port_list ]
+port_list     → port_entry | port_list , port_entry
+port_entry    → port_item | ! port_item
+port_item     → PORT | PORT : PORT | PORT : | : PORT
+```
+
+Decisions of record:
+
+- **Ranges are grammar, not lexing.** `80:90` lexes as `PORT COLON PORT`
+  with the existing COLON token; the four range shapes are LALR(1)-clean
+  (after `PORT COLON`, shift PORT if present, else reduce the open range).
+  No new lexing, no precedence declarations.
+- **Nesting is impossible by construction.** List entries derive from
+  `*_item`, which can never derive a bracket — the no-nested-lists rule is
+  grammar shape, not a check.
+- **Delimiter strictness.** Elements between delimiters are mandatory:
+  `[a,,b]`, `[a,]`, `[]`, `[80,!]` are syntax errors by shape, each with a
+  precise expected class.
+- **`any` is a keyword, not an expression.** It is legal only at field
+  level; `!any` and `[any,80]` are syntax errors (negation targets and
+  list entries must be real expressions). This also gives diagnostics a
+  free discriminator: an expected set with address/port members but
+  without `any` is a position inside a list or after `!` (EXPECT_ADDR_ELEM
+  / EXPECT_PORT_ELEM), and {COMMA, RBRACKET} is EXPECT_LIST_DELIM.
+- **Recovery unchanged.** Lists never cross lines, so the EOL anchor and
+  one-syntax-diagnostic-per-line policy hold; partial containers on the
+  parser stack are released by the container/element destructors
+  (leak-verified under corruption-heavy recovery).
+- **Normalization is semantic-time.** The parser stores raw text; the
+  header validator normalizes each port element to a canonical [lo,hi]
+  interval (`p`→[p,p], `1024:`→[1024,65535], `:80`→[1,80]) for ordering,
+  duplicate (ERROR) and subsumption (WARNING) analysis. Fully negated
+  lists warn. The Rule is never mutated.
+
 ## Phase 5 — grammar delta: generic option keys (implemented)
 
 One production added (zero conflicts preserved):

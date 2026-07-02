@@ -1,0 +1,11 @@
+alert tcp any !80 -> any 80
+alert tcp !$HOME_NET any -> any 80
+alert tcp any ![80,443] -> any 80
+alert tcp any any -> ![10.0.0.0/8,192.168.1.0/24] 80
+alert tcp any 1:1024 -> any 80:90
+alert udp any 1024: -> any :65535
+alert tcp any [80,443,8080] -> any 80
+alert tcp any [1:1024,8080,!443] -> any 80
+alert tcp any any -> [10.0.0.1,192.168.1.0/24,$HOME_NET] 80
+alert tcp !$HOME_NET any -> [10.0.0.1,192.168.1.0/24] [80,443,8080]
+alert tcp ![10.0.0.1,$EXTERNAL_NET] [1:1024,!80] <> [172.16.0.0/12] [:1024,8080:] (msg:"full composition"; sid:1;)

@@ -10,17 +10,18 @@ void sem_validate_rule(SemanticContext *sctx, const Rule *rule,
 {
     (void)sctx;
 
-    /* Ports on an icmp rule parse fine and each port may be individually
-     * valid — but ICMP has no port concept, so the combination is
-     * incoherent. Warning, not error: the rule still loads. */
+    /* Port expressions on an icmp rule parse fine and each may be
+     * individually valid — but ICMP has no port concept, so the
+     * combination is incoherent. Warning, not error: the rule still
+     * loads. Applies to any non-`any` port form (single, range, list). */
     if (rule->protocol == PROTO_ICMP) {
-        if (rule->src_port.kind == PORT_NUMBER) {
+        if (rule->src_port.kind == PORT_EXPR) {
             diag_semantic(diags, rule->span, SEM_FAULT_ICMP_WITH_PORTS,
-                          "SrcPort", rule->src_port.text);
+                          "SrcPort", NULL);
         }
-        if (rule->dst_port.kind == PORT_NUMBER) {
+        if (rule->dst_port.kind == PORT_EXPR) {
             diag_semantic(diags, rule->span, SEM_FAULT_ICMP_WITH_PORTS,
-                          "DstPort", rule->dst_port.text);
+                          "DstPort", NULL);
         }
     }
 }

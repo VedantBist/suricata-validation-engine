@@ -15,7 +15,7 @@ Rule #2 | Line 3, Col 11 | SYNTAX ERROR
   Expected: SrcIP
   Found:    ->
   Source IP missing after protocol
-  Acceptable tokens here: any, IP address, CIDR block, variable
+  Acceptable tokens here: any, !, [, IP address, CIDR block, variable
 
 Rule #4 | Line 5 | SEMANTIC ERROR
   Field:    SrcIP

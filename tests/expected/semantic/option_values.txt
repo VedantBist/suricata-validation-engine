@@ -70,13 +70,11 @@ Rule #11 | Line 11 | SEMANTIC ERROR
 
 Rule #12 | Line 12 | SEMANTIC WARNING
   Field:    SrcPort
-  Value:    80
   Source port is meaningless for the icmp protocol
   ICMP has no ports; use 'any' for ports in icmp rules
 
 Rule #12 | Line 12 | SEMANTIC WARNING
   Field:    DstPort
-  Value:    443
   Destination port is meaningless for the icmp protocol
   ICMP has no ports; use 'any' for ports in icmp rules
 

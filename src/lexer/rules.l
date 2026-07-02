@@ -81,6 +81,9 @@ IP4     {DIGIT}+\.{DIGIT}+\.{DIGIT}+\.{DIGIT}+
 ":"                     { return tok_fixed(TOK_COLON); }
 ";"                     { return tok_fixed(TOK_SEMICOLON); }
 ","                     { return tok_fixed(TOK_COMMA); }
+"!"                     { return tok_fixed(TOK_NOT); }
+"["                     { return tok_fixed(TOK_LBRACKET); }
+"]"                     { return tok_fixed(TOK_RBRACKET); }
 
  /* CIDR before IP is documentation only — longest match already prefers it. */
 {IP4}\/{DIGIT}+         { return tok_value(TOK_CIDR); }

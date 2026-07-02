@@ -1,0 +1,27 @@
+    1:1    r1     ALERT          alert
+    1:7    r1     TCP            tcp
+    1:11   r1     NOT            !
+    1:12   r1     VARIABLE       "$HOME_NET"
+    1:22   r1     LBRACKET       [
+    1:23   r1     PORT           "1"
+    1:24   r1     COLON          :
+    1:25   r1     PORT           "1024"
+    1:29   r1     COMMA          ,
+    1:30   r1     NOT            !
+    1:31   r1     PORT           "443"
+    1:34   r1     RBRACKET       ]
+    1:36   r1     ARROW          ->
+    1:39   r1     NOT            !
+    1:40   r1     LBRACKET       [
+    1:41   r1     CIDR           "10.0.0.0/8"
+    1:51   r1     COMMA          ,
+    1:52   r1     IP             "192.168.1.7"
+    1:63   r1     RBRACKET       ]
+    1:65   r1     LBRACKET       [
+    1:66   r1     PORT           "80"
+    1:68   r1     COMMA          ,
+    1:69   r1     PORT           "8080"
+    1:73   r1     COLON          :
+    1:74   r1     RBRACKET       ]
+    1:75   r1     EOL
+== tokens: 26 | rules: 1 | lines: 1 | lexical errors: 0 ==

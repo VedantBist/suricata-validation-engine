@@ -20,14 +20,14 @@ Error: Source IP missing after protocol
 
 ## Status
 
-Phase 5 complete — semantic validation engine: modular validator passes
-over parsed Rule objects (IP/CIDR/port ranges, sid discipline with an O(1)
-cross-rule registry, rev typing, empty strings, unknown keys, cross-field
-coherence), Field/Value semantic diagnostics fully separated from syntax
-diagnostics, `INVALID (semantic)` verdicts, and a `--syntax-only` mode.
-The syntax/semantics boundary is now demonstrable:
-`alert tcp any any -> any 70000` parses (syntax VALID) and fails
-validation (port out of range). Parser backbone unchanged.
+Phase 6 complete — advanced header grammar: negation (`!80`, `!$HOME_NET`,
+`![...]`, per-element `[80,!443]`), port ranges (`1:1024`, `1024:`,
+`:65535`), port and IP lists, and mixed compositions like
+`alert tcp !$HOME_NET any -> [10.0.0.1,192.168.1.0/24] [80,443,8080]` —
+still zero grammar conflicts, still EOL-anchored recovery, still
+streaming. Semantic layer normalizes port elements to canonical intervals
+and validates range ordering/bounds, duplicate and subsumed list entries,
+fully-negated lists, and every nested element. Parser backbone unchanged.
 See [docs/ROADMAP.md](docs/ROADMAP.md) for the phased plan.
 
 ## Build & run

@@ -1,0 +1,13 @@
+Rule #1 (line 1): VALID
+Rule #2 (line 2): VALID
+Rule #3 (line 3): VALID
+Rule #4 (line 4): VALID
+Rule #5 (line 5): VALID
+Rule #6 (line 6): VALID
+Rule #7 (line 7): VALID
+Rule #8 (line 8): VALID
+Rule #9 (line 9): VALID
+Rule #10 (line 10): VALID
+Rule #11 (line 11): VALID
+
+== rules: 11 | valid: 11 | syntax-invalid: 0 | semantic-invalid: 0 | diagnostics: 0 ==

@@ -1,0 +1,66 @@
+Rule #1 (line 1): INVALID (syntax)
+Rule #2 (line 2): INVALID (syntax)
+Rule #3 (line 3): INVALID (syntax)
+Rule #4 (line 4): INVALID (syntax)
+Rule #5 (line 5): INVALID (syntax)
+Rule #6 (line 6): INVALID (syntax)
+Rule #7 (line 7): INVALID (syntax)
+Rule #8 (line 8): INVALID (syntax)
+Rule #9 (line 9): INVALID (syntax)
+Rule #10 (line 10): VALID
+
+Rule #1 | Line 1, Col 23 | SYNTAX ERROR
+  Expected: PortSpec
+  Found:    ,
+  Port expression missing (inside a list or after '!')
+  Acceptable tokens here: :, !, port
+
+Rule #2 | Line 2, Col 32 | SYNTAX ERROR
+  Expected: COMMA or ']'
+  Found:    IP address "192.168.1.1"
+  Missing ',' separator or ']' closing the list
+  Acceptable tokens here: ,, ]
+
+Rule #3 | Line 3, Col 24 | SYNTAX ERROR
+  Expected: COMMA or ']'
+  Found:    ->
+  Missing ',' separator or ']' closing the list
+  Acceptable tokens here: ,, ]
+
+Rule #4 | Line 4, Col 20 | SYNTAX ERROR
+  Expected: PortSpec
+  Found:    ]
+  Port expression missing (inside a list or after '!')
+  Acceptable tokens here: :, port
+
+Rule #5 | Line 5, Col 32 | SYNTAX ERROR
+  Expected: AddressSpec
+  Found:    ]
+  Address expression missing (inside a list or after '!')
+  Acceptable tokens here: !, IP address, CIDR block, variable
+
+Rule #6 | Line 6, Col 16 | SYNTAX ERROR
+  Expected: PortSpec
+  Found:    ]
+  Port expression missing (inside a list or after '!')
+  Acceptable tokens here: :, !, port
+
+Rule #7 | Line 7, Col 31 | SYNTAX ERROR
+  Expected: Options or end of rule
+  Found:    :
+  Unexpected content after the destination port (only an options block or end of line may follow)
+  Acceptable tokens here: (, end of line
+
+Rule #8 | Line 8, Col 16 | SYNTAX ERROR
+  Expected: PortSpec
+  Found:    any
+  Port expression missing (inside a list or after '!')
+  Acceptable tokens here: :, [, port
+
+Rule #9 | Line 9, Col 16 | SYNTAX ERROR
+  Expected: PortSpec
+  Found:    any
+  Port expression missing (inside a list or after '!')
+  Acceptable tokens here: :, !, port
+
+== rules: 10 | valid: 1 | syntax-invalid: 9 | semantic-invalid: 0 | diagnostics: 9 ==

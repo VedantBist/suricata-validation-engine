@@ -26,30 +26,81 @@ typedef enum RuleDirection {
     DIRECTION_BIDIR   /* <> */
 } RuleDirection;
 
+/* Advanced header structures (Phase 6): every address/port field is either
+ * ANY or a flat element container — one element for `80`, several for
+ * `[80,443,!8080]`. Negation lives at two levels: on the container
+ * (`!80`, `![80,443]`) and per element (`[80,!443]`). Nested lists are
+ * impossible by grammar construction, so the model never needs depth.
+ * Values are stored as raw text, not judged — "999.1.1.1" and "1024:80"
+ * live here untouched until the semantic pass normalizes them. */
+
 typedef enum EndpointKind {
     ENDPOINT_ANY,
-    ENDPOINT_IP,
-    ENDPOINT_CIDR,
-    ENDPOINT_VARIABLE
+    ENDPOINT_EXPR    /* one or more AddrElems */
 } EndpointKind;
+
+typedef enum AddrElemKind {
+    ADDR_ELEM_IP,
+    ADDR_ELEM_CIDR,
+    ADDR_ELEM_VARIABLE
+} AddrElemKind;
+
+typedef struct AddrElem {
+    AddrElemKind kind;
+    int negated;
+    char *text;      /* heap-owned raw lexeme */
+} AddrElem;
+
+typedef struct Endpoint {
+    EndpointKind kind;
+    int negated;     /* container-level: !X or ![...] */
+    int is_list;     /* was bracketed */
+    AddrElem *items;
+    size_t count;
+    size_t capacity;
+} Endpoint;
 
 typedef enum PortKind {
     PORT_ANY,
-    PORT_NUMBER
+    PORT_EXPR        /* one or more PortElems */
 } PortKind;
 
-/* text is the raw lexeme (heap-owned by the enclosing Rule), NULL for ANY.
- * Values are stored, not judged — "999.999.999.999" and "70000" live here
- * untouched until the semantic pass. */
-typedef struct Endpoint {
-    EndpointKind kind;
-    char *text;
-} Endpoint;
+typedef enum PortElemKind {
+    PORT_ELEM_SINGLE,     /* 80        lo set        */
+    PORT_ELEM_RANGE,      /* 80:90     lo and hi set */
+    PORT_ELEM_OPEN_HIGH,  /* 1024:     lo set        */
+    PORT_ELEM_OPEN_LOW    /* :65535    hi set        */
+} PortElemKind;
+
+typedef struct PortElem {
+    PortElemKind kind;
+    int negated;
+    char *lo;        /* heap-owned; NULL where the kind says so */
+    char *hi;
+} PortElem;
 
 typedef struct PortSpec {
     PortKind kind;
-    char *text;
+    int negated;
+    int is_list;
+    PortElem *items;
+    size_t count;
+    size_t capacity;
 } PortSpec;
+
+/* Container helpers (models own lifecycle; append takes ownership of the
+ * element's strings). *_free_contents releases the element array and every
+ * owned string but not the container itself — containers live by value on
+ * the parser stack and inside Rule. */
+void endpoint_init_any(Endpoint *ep);
+void endpoint_init_expr(Endpoint *ep);
+void endpoint_append(Endpoint *ep, AddrElem elem);
+void endpoint_free_contents(Endpoint *ep);
+
+void portspec_init_any(PortSpec *ps);
+void portspec_init_expr(PortSpec *ps);
+void portspec_append(PortSpec *ps, PortElem elem);
+void portspec_free_contents(PortSpec *ps);
 
 typedef struct Rule {
     RuleAction action;

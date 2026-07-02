@@ -22,6 +22,9 @@ const char *token_kind_name(int kind)
     case TOK_COLON:      return "COLON";
     case TOK_SEMICOLON:  return "SEMICOLON";
     case TOK_COMMA:      return "COMMA";
+    case TOK_NOT:        return "NOT";
+    case TOK_LBRACKET:   return "LBRACKET";
+    case TOK_RBRACKET:   return "RBRACKET";
     case TOK_IP:         return "IP";
     case TOK_CIDR:       return "CIDR";
     case TOK_PORT:       return "PORT";
@@ -53,6 +56,9 @@ const char *token_static_text(int kind)
     case TOK_COLON:     return ":";
     case TOK_SEMICOLON: return ";";
     case TOK_COMMA:     return ",";
+    case TOK_NOT:       return "!";
+    case TOK_LBRACKET:  return "[";
+    case TOK_RBRACKET:  return "]";
     default:            return NULL;
     }
 }

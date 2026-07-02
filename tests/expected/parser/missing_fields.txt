@@ -23,7 +23,7 @@ Rule #3 | Line 3, Col 15 | SYNTAX ERROR
   Expected: SrcPort
   Found:    ->
   Source port missing after source IP
-  Acceptable tokens here: any, port
+  Acceptable tokens here: any, :, !, [, port
 
 Rule #4 | Line 4, Col 19 | SYNTAX ERROR
   Expected: Direction
@@ -35,18 +35,18 @@ Rule #5 | Line 5, Col 22 | SYNTAX ERROR
   Expected: DstIP
   Found:    port "80"
   Destination IP missing after direction
-  Acceptable tokens here: any, IP address, CIDR block, variable
+  Acceptable tokens here: any, !, [, IP address, CIDR block, variable
 
 Rule #6 | Line 6, Col 25 | SYNTAX ERROR
   Expected: DstPort
   Found:    end of line
   Destination port missing after destination IP
-  Acceptable tokens here: any, port
+  Acceptable tokens here: any, :, !, [, port
 
 Rule #7 | Line 7, Col 29 | SYNTAX ERROR
-  Expected: Options or end of rule
+  Expected: COLON
   Found:    port "90"
-  Unexpected content after the destination port (only an options block or end of line may follow)
-  Acceptable tokens here: (, end of line
+  Colon missing after option key
+  Acceptable tokens here: (, :, end of line
 
 == rules: 8 | valid: 1 | syntax-invalid: 7 | semantic-invalid: 0 | diagnostics: 7 ==

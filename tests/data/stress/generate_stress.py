@@ -30,27 +30,59 @@ PROTOCOLS = ["tcp", "udp", "icmp"]
 VARIABLES = ["$HOME_NET", "$EXTERNAL_NET", "$DNS_SERVERS"]
 
 
+def ip(rng):
+    return "%d.%d.%d.%d" % tuple(rng.randrange(1, 254) for _ in range(4))
+
+
 def endpoint(rng):
-    kind = rng.randrange(4)
+    """Address forms incl. Phase 6 structures. Generated lists are always
+    semantically clean: distinct elements, never fully negated."""
+    kind = rng.randrange(6)
     if kind == 0:
         return "any"
     if kind == 1:
-        return "%d.%d.%d.%d" % tuple(rng.randrange(1, 254) for _ in range(4))
+        return ip(rng)
     if kind == 2:
-        ip = "%d.%d.%d.%d" % tuple(rng.randrange(1, 254) for _ in range(4))
-        return f"{ip}/{rng.choice([8, 16, 24, 32])}"
-    return rng.choice(VARIABLES)
+        return f"{ip(rng)}/{rng.choice([8, 16, 24, 32])}"
+    if kind == 3:
+        return rng.choice(VARIABLES)
+    if kind == 4:
+        return "!" + rng.choice(VARIABLES)
+    neg = "!" if rng.randrange(4) == 0 else ""
+    return f"[{ip(rng)},{ip(rng)}/{rng.choice([16, 24])},{neg}{rng.choice(VARIABLES)}]"
 
 
 def port(rng):
-    return "any" if rng.randrange(3) == 0 else str(rng.randrange(1, 65536))
+    """Port forms incl. Phase 6 structures. Singles are drawn below 10000
+    and ranges from disjoint bands above it, so generated lists never
+    contain duplicates or subsumed entries (warning-free baseline)."""
+    kind = rng.randrange(8)
+    if kind == 0:
+        return "any"
+    if kind <= 2:
+        return str(rng.randrange(1, 10000))
+    if kind == 3:
+        return "!" + str(rng.randrange(1, 10000))
+    if kind == 4:
+        lo = rng.randrange(10000, 20000)
+        return f"{lo}:{lo + rng.randrange(1, 5000)}"
+    if kind == 5:
+        return rng.choice([f"{rng.randrange(60000, 65000)}:",
+                           f":{rng.randrange(1, 1000)}"])
+    if kind == 6:
+        a, b = rng.sample(range(1, 10000), 2)
+        neg = "!" if rng.randrange(4) == 0 else ""
+        return f"[{a},{neg}{b}]"
+    a, b = rng.sample(range(1, 10000), 2)
+    lo = rng.randrange(20000, 30000)
+    return f"[{a},{b},{lo}:{lo + 100}]"
 
 
 def corrupt(fields, rng, has_options):
     """Structural corruption only — never introduces unlexable characters,
     and every corruption is guaranteed syntactically INVALID (so the runner
     can assert diagnostics == invalid rules)."""
-    kind = rng.randrange(6 if has_options else 4)
+    kind = rng.randrange(9 if has_options else 7)
     if kind == 0:
         # drop a header field — never the options block, which would leave
         # a perfectly valid header-only rule
@@ -63,6 +95,12 @@ def corrupt(fields, rng, has_options):
     elif kind == 3:
         fields.append(fields[-1])                   # duplicated trailing field
     elif kind == 4:
+        fields[6] = "[80,,443]"                     # empty list slot
+    elif kind == 5:
+        fields[6] = "[80,443"                       # unclosed list
+    elif kind == 6:
+        fields[6] = "[80,!]"                        # bare negation in list
+    elif kind == 7:
         fields[-1] = fields[-1].replace(";", "", 1)  # first semicolon gone
     else:
         fields[-1] = fields[-1][:-1]                 # closing ')' gone
@@ -72,7 +110,7 @@ def corrupt(fields, rng, has_options):
 def sem_corrupt(rng, header, options, last_clean_sid):
     """Semantic corruption: parses cleanly, fails validation with exactly
     one ERROR. header is the 7-element field list; options the option text."""
-    kind = rng.randrange(6)
+    kind = rng.randrange(8)
     if kind == 4 and last_clean_sid is None:
         kind = 5
     if kind == 0:
@@ -86,9 +124,15 @@ def sem_corrupt(rng, header, options, last_clean_sid):
     elif kind == 4:
         import re
         options = re.sub(r"sid:\d+", f"sid:{last_clean_sid}", options)
-    else:
+    elif kind == 5:
         import re
         options = re.sub(r"sid:\d+", "sid:0", options)        # sid not positive
+    elif kind == 6:
+        hi = rng.randrange(1, 30000)
+        header[6] = f"{hi + rng.randrange(1, 1000)}:{hi}"     # inverted range
+    else:
+        p = rng.randrange(1, 65535)
+        header[6] = f"[{p},{p}]"                              # duplicate entry
     return header, options
 
 

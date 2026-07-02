@@ -40,8 +40,11 @@ void diag_lexical_unterminated_string(DiagList *list, SrcSpan span);
 typedef enum ExpectedClass {
     EXPECT_ACTION,          /* alert | drop | pass */
     EXPECT_PROTOCOL,        /* tcp | udp | icmp */
-    EXPECT_ADDRESS,         /* any | IP | CIDR | variable (Src vs Dst by progress) */
-    EXPECT_PORT,            /* any | PORT            (Src vs Dst by progress) */
+    EXPECT_ADDRESS,         /* field level: any | IP | CIDR | variable | ! | [ */
+    EXPECT_PORT,            /* field level: any | PORT | : | ! | [ */
+    EXPECT_ADDR_ELEM,       /* inside a list or after '!': no `any` allowed */
+    EXPECT_PORT_ELEM,       /* inside a list or after '!': no `any` allowed */
+    EXPECT_LIST_DELIM,      /* , | ] — between list elements */
     EXPECT_DIRECTION,       /* -> | <> */
     EXPECT_OPTIONS_OR_END,  /* ( | EOL — after the destination port */
     EXPECT_OPTION_KEY,      /* option keyword — right after '(' */
@@ -80,7 +83,11 @@ typedef enum SemFault {
     SEM_FAULT_EMPTY_MSG,       /* WARNING: legal but useless */
     SEM_FAULT_EMPTY_CONTENT,   /* ERROR: unmatched-able predicate */
     SEM_FAULT_UNKNOWN_KEY,     /* ERROR: key outside the supported subset */
-    SEM_FAULT_ICMP_WITH_PORTS  /* WARNING: cross-field coherence */
+    SEM_FAULT_ICMP_WITH_PORTS, /* WARNING: cross-field coherence */
+    SEM_FAULT_RANGE_ORDER,     /* ERROR: port range lower bound > upper */
+    SEM_FAULT_DUP_LIST_ENTRY,  /* ERROR: identical entry twice in one list */
+    SEM_FAULT_REDUNDANT_ENTRY, /* WARNING: entry subsumed by a wider range */
+    SEM_FAULT_ALL_NEGATED_LIST /* WARNING: every list entry negated */
 } SemFault;
 
 /* field: short field name ("DstPort", "sid", or the offending option key);

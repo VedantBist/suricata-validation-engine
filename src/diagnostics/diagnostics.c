@@ -106,6 +106,18 @@ static void role_for(ExpectedClass klass, int progress,
             *narrative = "Destination port missing after destination IP";
         }
         return;
+    case EXPECT_ADDR_ELEM:
+        *role = "AddressSpec";
+        *narrative = "Address expression missing (inside a list or after '!')";
+        return;
+    case EXPECT_PORT_ELEM:
+        *role = "PortSpec";
+        *narrative = "Port expression missing (inside a list or after '!')";
+        return;
+    case EXPECT_LIST_DELIM:
+        *role = "COMMA or ']'";
+        *narrative = "Missing ',' separator or ']' closing the list";
+        return;
     case EXPECT_DIRECTION:
         *role = "Direction";
         *narrative = "Direction operator (-> or <>) missing after source port";
@@ -217,6 +229,19 @@ static const struct {
     [SEM_FAULT_ICMP_WITH_PORTS] = { DIAG_WARNING,
         "%s is meaningless for the icmp protocol",
         "ICMP has no ports; use 'any' for ports in icmp rules" },
+    [SEM_FAULT_RANGE_ORDER] = { DIAG_ERROR,
+        "Port range lower bound exceeds upper bound",
+        "Ranges are written low:high; an inverted range matches nothing" },
+    [SEM_FAULT_DUP_LIST_ENTRY] = { DIAG_ERROR,
+        "Duplicate entry in %s list",
+        "Each list element must be unique" },
+    [SEM_FAULT_REDUNDANT_ENTRY] = { DIAG_WARNING,
+        "%s list entry is subsumed by a wider range in the same list",
+        "The entry adds nothing; the enclosing range already covers it" },
+    [SEM_FAULT_ALL_NEGATED_LIST] = { DIAG_WARNING,
+        "Every entry in the %s list is negated",
+        "A fully negated list matches almost everything; "
+        "this is usually an authoring mistake" },
 };
 
 static Diagnostic semantic_base(SrcSpan span, DiagSeverity severity)

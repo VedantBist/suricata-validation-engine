@@ -13,6 +13,6 @@ Rule #3 | Line 3, Col 11 | SYNTAX ERROR
   Expected: SrcIP
   Found:    ->
   Source IP missing after protocol
-  Acceptable tokens here: any, IP address, CIDR block, variable
+  Acceptable tokens here: any, !, [, IP address, CIDR block, variable
 
 == rules: 10 | valid: 9 | syntax-invalid: 1 | semantic-invalid: 0 | diagnostics: 1 ==
