@@ -12,11 +12,13 @@
 static int usage(FILE *out)
 {
     fprintf(out,
-            "usage: suricata-validate [--validate|--dump-tokens] <rules-file>\n"
+            "usage: suricata-validate [--validate|--syntax-only|--dump-tokens]"
+            " <rules-file>\n"
             "\n"
             "modes:\n"
-            "  --validate      parse and validate rules with error recovery\n"
+            "  --validate      full validation: syntax + semantics\n"
             "                  (default when no mode is given)\n"
+            "  --syntax-only   structural validation only, semantic layer off\n"
             "  --dump-tokens   print the token stream with positions\n"
             "                  (lexer inspection)\n"
             "\n"
@@ -28,10 +30,14 @@ int main(int argc, char **argv)
 {
     const char *path = NULL;
     int dump_tokens = 0;
+    int syntax_only = 0;
 
     if (argc == 2) {
         path = argv[1];
     } else if (argc == 3 && strcmp(argv[1], "--validate") == 0) {
+        path = argv[2];
+    } else if (argc == 3 && strcmp(argv[1], "--syntax-only") == 0) {
+        syntax_only = 1;
         path = argv[2];
     } else if (argc == 3 && strcmp(argv[1], "--dump-tokens") == 0) {
         dump_tokens = 1;
@@ -50,7 +56,7 @@ int main(int argc, char **argv)
     }
 
     int rc = dump_tokens ? token_dump_run(input, stdout)
-                         : validate_run(input, stdout);
+                         : validate_run(input, stdout, syntax_only);
 
     if (input != stdin) {
         fclose(input);

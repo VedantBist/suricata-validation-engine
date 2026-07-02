@@ -1,0 +1,28 @@
+Rule #1 (line 2): VALID
+Rule #2 (line 3): VALID
+Rule #3 (line 4): VALID
+Rule #4 (line 7): INVALID (syntax)
+Rule #5 (line 9): VALID
+Rule #6 (line 10): INVALID (semantic)
+Rule #7 (line 11): INVALID (semantic)
+Rule #8 (line 12): VALID
+
+Rule #4 | Line 7, Col 11 | SYNTAX ERROR
+  Expected: SrcIP
+  Found:    ->
+  Source IP missing after protocol
+  Acceptable tokens here: any, IP address, CIDR block, variable
+
+Rule #6 | Line 10 | SEMANTIC ERROR
+  Field:    sid
+  Value:    5000
+  Duplicate sid detected
+  sid 5000 was first used by rule #1 (line 2); signature ids must be unique
+
+Rule #7 | Line 11 | SEMANTIC ERROR
+  Field:    sid
+  Value:    5000
+  Duplicate sid detected
+  sid 5000 was first used by rule #1 (line 2); signature ids must be unique
+
+== rules: 8 | valid: 5 | syntax-invalid: 1 | semantic-invalid: 2 | diagnostics: 3 ==

@@ -41,11 +41,17 @@ diagnostics classes (COLON/Value/SEMICOLON/OptionKey/close). Recovery stays
 line-level on the Phase 3 EOL anchor. Stress tier upgraded to full rules
 with recursive option lists and option-level corruption — leak-free.
 
-## Phase 5 — Semantic validation
-Validator pass over Rule objects (hooks into dispatch_rule_accepted): port
-range, IP octets, CIDR mask, missing SID, duplicate SID (registry),
-option-value typing (sid/rev want numbers). SEMANTIC diagnostics distinct
-from SYNTAX in reports. Semantic golden tests.
+## Phase 5 — Semantic validation  ✅
+Semantic layer hooked into dispatch_rule_accepted: modular validator passes
+(semantic/validators/{header,options,rule}.c behind an ordered pass table) —
+IP octets, CIDR prefixes, port ranges, sid presence/uniqueness/numeric/
+positive, cross-rule duplicate sid via an O(1) open-addressing registry
+(the only cross-rule state), rev numeric, empty msg (warning) / content
+(error), unknown option keys (moved from syntax to semantics via the
+`option_key → OPTION_KEY | IDENT` grammar delta), icmp/port coherence
+warnings. Field/Value semantic diagnostics, INVALID (semantic) verdicts,
+`--syntax-only` mode, four semantic golden suites, full-pipeline stress
+tier with dual corruption (diagnostics == syntax + semantic invariant).
 
 ## Phase 6 — Advanced grammar
 Negation, port ranges and lists, bracketed IP lists. Grammar grows;

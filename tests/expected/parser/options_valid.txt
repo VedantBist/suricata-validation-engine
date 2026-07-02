@@ -6,4 +6,4 @@ Rule #5 (line 5): VALID
 Rule #6 (line 6): VALID
 Rule #7 (line 7): VALID
 
-== rules: 7 | valid: 7 | invalid: 0 | diagnostics: 0 ==
+== rules: 7 | valid: 7 | syntax-invalid: 0 | semantic-invalid: 0 | diagnostics: 0 ==

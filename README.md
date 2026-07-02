@@ -20,12 +20,14 @@ Error: Source IP missing after protocol
 
 ## Status
 
-Phase 4 complete — recursive options parsing: full rule structure
-`action header (key:value; ...)` with structured Option models, leak-free
-recursive cleanup under panic recovery, and option-region Expected/Found
-diagnostics. The Phase 3 backbone (zero-conflict grammar, `error EOL`
-line-level recovery, streaming one-rule-at-a-time lifecycle) is unchanged
-and re-verified byte-identical. Semantic validation arrives in Phase 5.
+Phase 5 complete — semantic validation engine: modular validator passes
+over parsed Rule objects (IP/CIDR/port ranges, sid discipline with an O(1)
+cross-rule registry, rev typing, empty strings, unknown keys, cross-field
+coherence), Field/Value semantic diagnostics fully separated from syntax
+diagnostics, `INVALID (semantic)` verdicts, and a `--syntax-only` mode.
+The syntax/semantics boundary is now demonstrable:
+`alert tcp any any -> any 70000` parses (syntax VALID) and fails
+validation (port out of range). Parser backbone unchanged.
 See [docs/ROADMAP.md](docs/ROADMAP.md) for the phased plan.
 
 ## Build & run
@@ -34,7 +36,8 @@ See [docs/ROADMAP.md](docs/ROADMAP.md) for the phased plan.
 make                 # debug build (UBSan) -> build/bin/suricata-validate
 make release         # optimized build
 make test            # golden-file suite; STRESS=1 make test adds the 10k tiers
-build/bin/suricata-validate samples/header_only.rules   # validate (default)
+build/bin/suricata-validate samples/demo.rules          # full validation (default)
+build/bin/suricata-validate --syntax-only file.rules    # structural lint only
 build/bin/suricata-validate --dump-tokens samples/demo.rules
 SV_PARSER_TRACE=1 build/bin/suricata-validate file      # recovery trace (debug builds)
 ```

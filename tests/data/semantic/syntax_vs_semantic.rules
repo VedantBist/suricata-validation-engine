@@ -1,0 +1,7 @@
+# the project's canonical distinction: structure vs meaning
+alert tcp any any -> any 70000 (msg:"syntax VALID, semantics INVALID"; sid:1;)
+alert tcp -> any 80 (msg:"syntax INVALID, semantics never runs"; sid:2;)
+alert tcp any any -> any 80 (msg:"both layers clean"; sid:3;)
+alert tcp 999.1.1.1 any -> any 70000 (msg:"two semantic faults, one rule"; sid:4;)
+alert tcp any any -> any 80 (msg:"missing semicolon" sid:5;)
+alert tcp any any -> any 80 (msg:"clean tail"; sid:6;)

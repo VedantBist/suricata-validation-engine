@@ -7,12 +7,13 @@
 # tests/expected/<suite>/<case>.exit file says otherwise.
 #
 # Suites:
-#   lexer/   — run with --dump-tokens
-#   parser/  — run with --validate (recovery + diagnostics goldens)
-#   stress   — STRESS=1: ~10k-rule tiers for both lexer and parser; asserts
-#              completion + count invariants (+ heap check via `leaks` on
-#              macOS, since ASan is unusable on some macOS toolchains — see
-#              Makefile)
+#   lexer/    — run with --dump-tokens
+#   parser/   — run with --syntax-only (recovery + syntax diagnostics,
+#               isolated from semantic churn)
+#   semantic/ — run with --validate (full pipeline: syntax + semantics)
+#   stress    — STRESS=1: ~10k-rule tiers; asserts completion + count
+#               invariants (+ heap check via `leaks` on macOS, since ASan
+#               is unusable on some macOS toolchains — see Makefile)
 
 set -u
 
@@ -62,10 +63,17 @@ for input in "$ROOT"/tests/data/lexer/*.rules; do
 done
 
 echo
-echo "== parser suite (validate) =="
+echo "== parser suite (syntax-only) =="
 for input in "$ROOT"/tests/data/parser/*.rules; do
-    run_case --validate "$input" \
+    run_case --syntax-only "$input" \
         "$ROOT/tests/expected/parser/$(basename "${input%.rules}").txt"
+done
+
+echo
+echo "== semantic suite (full validation) =="
+for input in "$ROOT"/tests/data/semantic/*.rules; do
+    run_case --validate "$input" \
+        "$ROOT/tests/expected/semantic/$(basename "${input%.rules}").txt"
 done
 
 # Heap check helper: leaks(1) replaces the target's exit code with its own,
@@ -101,27 +109,31 @@ if [ "${STRESS:-0}" = "1" ]; then
     fi
 
     echo
-    echo "== stress: parser (10k rules with recursive options, 2% malformed) =="
+    echo "== stress: full pipeline (10k rules, 2% syntax + 2% semantic corruption) =="
     stress_parser="$ROOT/build/stress_parser.rules"
     python3 "$ROOT/tests/data/stress/generate_stress.py" 10000 \
-        --error-rate 0.02 > "$stress_parser" 2>/dev/null
+        --error-rate 0.02 --semantic-error-rate 0.02 > "$stress_parser" 2>/dev/null
     start=$(date +%s)
     out="$("$BIN" --validate "$stress_parser")"
     rc=$?
     elapsed=$(( $(date +%s) - start ))
     summary="$(echo "$out" | tail -1)"
     echo "$summary   (${elapsed}s)"
-    # Invariants: every rule accounted for exactly once; corrupted input is
-    # lexically clean, so diagnostics must equal invalid rules (1 per line).
-    read -r total valid invalid diags <<< "$(echo "$summary" | awk -F'[:|=]+' \
-        '{gsub(/[^0-9 ]/,""); print $0}' | awk '{print $1, $2, $3, $4}')"
+    # Invariants: every rule accounted for exactly once
+    # (valid + syntax-invalid + semantic-invalid == total); corruption is
+    # lexically clean and every injected fault yields exactly one ERROR
+    # diagnostic, so diagnostics == syntax-invalid + semantic-invalid.
+    read -r total valid syninv seminv diags <<< "$(echo "$summary" \
+        | awk -F'[:|=]+' '{gsub(/[^0-9 ]/,""); print $0}' \
+        | awk '{print $1, $2, $3, $4, $5}')"
     if [ "$rc" -ne 1 ]; then
-        fail_case "stress-parser" "exit $rc, expected 1"
-    elif [ "$total" != "10000" ] || [ $((valid + invalid)) -ne "$total" ] \
-        || [ "$diags" != "$invalid" ] || [ "$invalid" -eq 0 ]; then
-        fail_case "stress-parser" "count invariants violated (total=$total valid=$valid invalid=$invalid diags=$diags)"
-    elif leaks_check "stress-parser" "$BIN" --validate "$stress_parser"; then
-        echo "ok    stress-parser (valid=$valid invalid=$invalid)"
+        fail_case "stress-full" "exit $rc, expected 1"
+    elif [ "$total" != "10000" ] || [ $((valid + syninv + seminv)) -ne "$total" ] \
+        || [ "$diags" -ne $((syninv + seminv)) ] \
+        || [ "$syninv" -eq 0 ] || [ "$seminv" -eq 0 ]; then
+        fail_case "stress-full" "count invariants violated (total=$total valid=$valid syntax=$syninv semantic=$seminv diags=$diags)"
+    elif leaks_check "stress-full" "$BIN" --validate "$stress_parser"; then
+        echo "ok    stress-full (valid=$valid syntax-invalid=$syninv semantic-invalid=$seminv)"
         pass=$((pass + 1))
     fi
 fi

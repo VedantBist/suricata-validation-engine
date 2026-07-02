@@ -8,16 +8,26 @@
 #include "lexer/lexer.h"
 #include "models/context.h"
 #include "reporting/report_text.h"
+#include "semantic/semantic.h"
 
 void dispatch_rule_accepted(ParserContext *ctx, Rule *rule)
 {
-    ctx->valid_count++;
+    /* The semantic pass runs here — after a clean parse, before the rule
+     * dies. The parser built structure; this is where meaning is judged.
+     * Streaming contract unchanged: the rule is freed before the next line
+     * finishes parsing, whatever the verdict. */
+    RuleVerdict verdict = VERDICT_VALID;
+    if (ctx->semantics != NULL
+        && semantic_validate(ctx->semantics, rule, &ctx->diagnostics) > 0) {
+        verdict = VERDICT_INVALID_SEMANTIC;
+        ctx->semantic_invalid_count++;
+    } else {
+        ctx->valid_count++;
+    }
     if (ctx->report_out != NULL) {
         report_rule_verdict(ctx->report_out, rule->span.rule_number,
-                            rule->span.first_line, 1);
+                            rule->span.first_line, verdict);
     }
-    /* Phase 6 hooks in here: semantic validation over the completed Rule
-     * before it is released. Streaming contract: the rule dies now. */
     rule_free(rule);
 }
 
@@ -25,14 +35,18 @@ void dispatch_rule_rejected(ParserContext *ctx, int rule_number, int line)
 {
     ctx->invalid_count++;
     if (ctx->report_out != NULL) {
-        report_rule_verdict(ctx->report_out, rule_number, line, 0);
+        report_rule_verdict(ctx->report_out, rule_number, line,
+                            VERDICT_INVALID_SYNTAX);
     }
 }
 
-int validate_run(FILE *input, FILE *out)
+int validate_run(FILE *input, FILE *out, int syntax_only)
 {
     ParserContext *ctx = context_create();
     ctx->report_out = out;
+    if (!syntax_only) {
+        ctx->semantics = semantic_context_create();
+    }
     lexer_begin(input, ctx);
 
 #if defined(YYDEBUG) && YYDEBUG
@@ -57,13 +71,17 @@ int validate_run(FILE *input, FILE *out)
             report_diagnostics(out, &ctx->diagnostics);
         }
         fprintf(out,
-                "\n== rules: %d | valid: %d | invalid: %d | diagnostics: %zu ==\n",
+                "\n== rules: %d | valid: %d | syntax-invalid: %d"
+                " | semantic-invalid: %d | diagnostics: %zu ==\n",
                 ctx->rule_count, ctx->valid_count, ctx->invalid_count,
-                ctx->diagnostics.count);
-        exit_code =
-            (ctx->invalid_count > 0 || ctx->diagnostics.count > 0) ? 1 : 0;
+                ctx->semantic_invalid_count, ctx->diagnostics.count);
+        exit_code = (ctx->invalid_count > 0 || ctx->semantic_invalid_count > 0
+                     || ctx->diagnostics.count > 0)
+                        ? 1
+                        : 0;
     }
 
+    semantic_context_destroy(ctx->semantics);
     context_destroy(ctx);
     return exit_code;
 }

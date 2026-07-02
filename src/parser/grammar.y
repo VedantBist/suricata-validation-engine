@@ -124,6 +124,7 @@
 %type <discrim>  action protocol direction
 %type <endpoint> address src_address dst_address
 %type <port>     port_spec src_port dst_port
+%type <str>      option_key
 %type <optval>   option_value
 %type <opt>      option
 %type <optlist>  options option_list
@@ -281,11 +282,19 @@ option_list:
     ;
 
 option:
-      TOK_OPTION_KEY TOK_COLON option_value TOK_SEMICOLON
+      option_key TOK_COLON option_value TOK_SEMICOLON
         {
             /* takes ownership of the key lexeme and the value text */
             $$ = option_create($1, $3.kind, $3.text, @$);
         }
+    ;
+
+/* Any identifier is structurally a key (Phase 5): whether it is a
+ * *supported* key is a semantic question — `foo:"bar";` parses and the
+ * semantic layer reports the unknown key. Keeps meaning out of grammar. */
+option_key:
+      TOK_OPTION_KEY    { $$ = $1; }
+    | TOK_IDENT         { $$ = $1; }
     ;
 
 option_value:
@@ -352,6 +361,9 @@ static int yyreport_syntax_error(const yypcontext_t *yyctx, ParserContext *ctx)
         }
     }
 
+    /* optkey outranks value: option-key positions now also accept IDENT
+     * (generic keys), so {OPTION_KEY, IDENT} must classify as a key
+     * position, while {STRING, NUMBER, IDENT} after ':' stays a value. */
     ExpectedClass klass =
         saw.action                ? EXPECT_ACTION
         : saw.protocol            ? EXPECT_PROTOCOL
@@ -359,10 +371,10 @@ static int yyreport_syntax_error(const yypcontext_t *yyctx, ParserContext *ctx)
         : saw.port                ? EXPECT_PORT
         : saw.dir                 ? EXPECT_DIRECTION
         : saw.colon               ? EXPECT_COLON
-        : saw.value               ? EXPECT_OPTION_VALUE
-        : saw.semi                ? EXPECT_SEMICOLON
         : saw.optkey && saw.rparen ? EXPECT_OPTION_OR_CLOSE
         : saw.optkey              ? EXPECT_OPTION_KEY
+        : saw.value               ? EXPECT_OPTION_VALUE
+        : saw.semi                ? EXPECT_SEMICOLON
         : saw.lparen && saw.eol   ? EXPECT_OPTIONS_OR_END
         : saw.eol                 ? EXPECT_END_OF_RULE
                                   : EXPECT_OTHER;

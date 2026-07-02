@@ -164,6 +164,106 @@ static char *join_names(const char *const *names, int count)
     return out;
 }
 
+/* ---- Semantic fault table: severity + prose live here, not in semantic/.
+ * msg_fmt may contain one %s consumed by the human field name; snprintf
+ * ignores surplus arguments for formats without it. */
+static const char *field_human(const char *field)
+{
+    if (strcmp(field, "SrcIP") == 0)   return "Source IP";
+    if (strcmp(field, "DstIP") == 0)   return "Destination IP";
+    if (strcmp(field, "SrcPort") == 0) return "Source port";
+    if (strcmp(field, "DstPort") == 0) return "Destination port";
+    return field;
+}
+
+static const struct {
+    DiagSeverity severity;
+    const char *msg_fmt;
+    const char *explanation;
+} SEM_FAULTS[] = {
+    [SEM_FAULT_IP_OCTET] = { DIAG_ERROR,
+        "%s contains an IP octet outside the valid range (0-255)",
+        "Each dotted segment of an IPv4 address must be between 0 and 255" },
+    [SEM_FAULT_CIDR_PREFIX] = { DIAG_ERROR,
+        "%s has a CIDR prefix outside the valid range (/0-/32)",
+        "An IPv4 CIDR mask must be between /0 and /32" },
+    [SEM_FAULT_PORT_RANGE] = { DIAG_ERROR,
+        "%s exceeds the valid range (1-65535)",
+        "TCP/UDP ports are 16-bit values from 1 to 65535" },
+    [SEM_FAULT_SID_MISSING] = { DIAG_ERROR,
+        "Rule has no sid option",
+        "Every rule must declare exactly one numeric signature id (sid)" },
+    [SEM_FAULT_SID_REPEATED] = { DIAG_ERROR,
+        "Duplicate sid option inside the rule",
+        "A rule must declare exactly one sid" },
+    [SEM_FAULT_SID_NOT_NUMERIC] = { DIAG_ERROR,
+        "sid value is not numeric",
+        "sid must be a positive integer" },
+    [SEM_FAULT_SID_NOT_POSITIVE] = { DIAG_ERROR,
+        "sid must be greater than zero",
+        "sid 0 is reserved; signature ids start at 1" },
+    [SEM_FAULT_REV_NOT_NUMERIC] = { DIAG_ERROR,
+        "rev value is not numeric",
+        "rev must be a non-negative integer" },
+    [SEM_FAULT_EMPTY_MSG] = { DIAG_WARNING,
+        "msg string is empty",
+        "An empty msg makes alerts unreadable; give the rule a description" },
+    [SEM_FAULT_EMPTY_CONTENT] = { DIAG_ERROR,
+        "content string is empty",
+        "An empty content match can never match meaningfully" },
+    [SEM_FAULT_UNKNOWN_KEY] = { DIAG_ERROR,
+        "Unknown option key '%s'",
+        "Supported option keys in this grammar subset: msg, sid, rev, content" },
+    [SEM_FAULT_ICMP_WITH_PORTS] = { DIAG_WARNING,
+        "%s is meaningless for the icmp protocol",
+        "ICMP has no ports; use 'any' for ports in icmp rules" },
+};
+
+static Diagnostic semantic_base(SrcSpan span, DiagSeverity severity)
+{
+    Diagnostic d;
+    memset(&d, 0, sizeof(d));
+    d.category = DIAG_SEMANTIC;
+    d.severity = severity;
+    d.rule_number = span.rule_number;
+    d.line = span.first_line;
+    d.column = span.first_column;
+    return d;
+}
+
+void diag_semantic(DiagList *list, SrcSpan span, SemFault fault,
+                   const char *field, const char *value)
+{
+    Diagnostic d = semantic_base(span, SEM_FAULTS[fault].severity);
+    d.field = xstrdup(field);
+    if (value != NULL) {
+        d.value = xstrdup(value);
+    }
+    d.message = formatted(SEM_FAULTS[fault].msg_fmt, field_human(field));
+    d.explanation = xstrdup(SEM_FAULTS[fault].explanation);
+    diag_list_add(list, d);
+}
+
+void diag_semantic_duplicate_sid(DiagList *list, SrcSpan span,
+                                 const char *sid_text,
+                                 int first_rule, int first_line)
+{
+    Diagnostic d = semantic_base(span, DIAG_ERROR);
+    d.field = xstrdup("sid");
+    d.value = xstrdup(sid_text);
+    d.message = xstrdup("Duplicate sid detected");
+    int needed = snprintf(NULL, 0,
+                          "sid %s was first used by rule #%d (line %d); "
+                          "signature ids must be unique",
+                          sid_text, first_rule, first_line);
+    d.explanation = xmalloc((size_t)needed + 1);
+    snprintf(d.explanation, (size_t)needed + 1,
+             "sid %s was first used by rule #%d (line %d); "
+             "signature ids must be unique",
+             sid_text, first_rule, first_line);
+    diag_list_add(list, d);
+}
+
 void diag_syntax_error(DiagList *list, SrcSpan span, int progress,
                        ExpectedClass klass,
                        const char *const *expected_names, int expected_count,

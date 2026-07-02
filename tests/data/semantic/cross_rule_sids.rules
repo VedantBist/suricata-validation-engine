@@ -1,0 +1,12 @@
+# duplicate sid detection must work across distant rules
+alert tcp any any -> any 80 (msg:"first use of 5000"; sid:5000;)
+alert udp any any -> any 53 (msg:"unrelated"; sid:5001;)
+alert tcp any any -> any 443 (msg:"unrelated"; sid:5002;)
+
+# a syntactically broken rule in between must not disturb the registry
+alert tcp -> any 80
+
+alert udp any any -> any 123 (msg:"unrelated"; sid:5003;)
+alert tcp any any -> any 8080 (msg:"duplicate of rule 1"; sid:5000;)
+alert tcp any any -> any 8443 (msg:"duplicate again"; sid:5000;)
+alert tcp any any -> any 9000 (msg:"clean tail"; sid:5004;)

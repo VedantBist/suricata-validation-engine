@@ -49,4 +49,4 @@ Rule #7 | Line 7, Col 29 | SYNTAX ERROR
   Unexpected content after the destination port (only an options block or end of line may follow)
   Acceptable tokens here: (, end of line
 
-== rules: 8 | valid: 1 | invalid: 7 | diagnostics: 7 ==
+== rules: 8 | valid: 1 | syntax-invalid: 7 | semantic-invalid: 0 | diagnostics: 7 ==

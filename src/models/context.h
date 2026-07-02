@@ -58,8 +58,13 @@ typedef struct ParserContext {
 
     /* Run results (written by core's dispatch layer) */
     int valid_count;
-    int invalid_count;
+    int invalid_count;           /* syntax-invalid rules */
+    int semantic_invalid_count;  /* parsed cleanly, failed validation */
     FILE *report_out;           /* verdict stream; NULL outside validate mode */
+
+    /* Semantic layer handle, owned by core; NULL in syntax-only and
+     * token-dump modes (the dispatch layer then skips validation). */
+    struct SemanticContext *semantics;
 } ParserContext;
 
 ParserContext *context_create(void);

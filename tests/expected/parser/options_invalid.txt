@@ -6,8 +6,7 @@ Rule #5 (line 5): INVALID (syntax)
 Rule #6 (line 6): INVALID (syntax)
 Rule #7 (line 7): INVALID (syntax)
 Rule #8 (line 8): INVALID (syntax)
-Rule #9 (line 9): INVALID (syntax)
-Rule #10 (line 10): VALID
+Rule #9 (line 9): VALID
 
 Rule #1 | Line 1, Col 41 | SYNTAX ERROR
   Expected: SEMICOLON
@@ -36,7 +35,7 @@ Rule #4 | Line 4, Col 42 | SYNTAX ERROR
   Expected: OptionKey or ')'
   Found:    invalid token "@"
   Expected another option or ')' closing the options block
-  Acceptable tokens here: ), option keyword
+  Acceptable tokens here: ), option keyword, identifier
 
 Rule #4 | Line 4, Col 43 | LEXICAL ERROR
   Found:    @
@@ -52,34 +51,28 @@ Rule #5 | Line 5, Col 30 | SYNTAX ERROR
   Expected: OptionKey
   Found:    )
   Option missing after '(' (supported keys: msg, sid, rev, content)
-  Acceptable tokens here: option keyword
+  Acceptable tokens here: option keyword, identifier
 
 Rule #6 | Line 6, Col 48 | SYNTAX ERROR
   Expected: OptionKey or ')'
   Found:    end of line
   Expected another option or ')' closing the options block
-  Acceptable tokens here: ), option keyword
+  Acceptable tokens here: ), option keyword, identifier
 
-Rule #7 | Line 7, Col 30 | SYNTAX ERROR
-  Expected: OptionKey
-  Found:    identifier "foo"
-  Option missing after '(' (supported keys: msg, sid, rev, content)
-  Acceptable tokens here: option keyword
-
-Rule #8 | Line 8, Col 34 | LEXICAL ERROR
+Rule #7 | Line 7, Col 34 | LEXICAL ERROR
   Unterminated string literal
   The string was closed automatically at the end of the line so that following rules are not swallowed by the open quote
 
-Rule #8 | Line 8, Col 56 | SYNTAX ERROR
+Rule #7 | Line 7, Col 56 | SYNTAX ERROR
   Expected: SEMICOLON
   Found:    end of line
   Missing semicolon after option value
   Acceptable tokens here: ;
 
-Rule #9 | Line 9, Col 50 | SYNTAX ERROR
+Rule #8 | Line 8, Col 50 | SYNTAX ERROR
   Expected: end of rule
   Found:    identifier "extra"
   Unexpected content after the options block
   Acceptable tokens here: end of line
 
-== rules: 10 | valid: 1 | invalid: 9 | diagnostics: 13 ==
+== rules: 9 | valid: 1 | syntax-invalid: 8 | semantic-invalid: 0 | diagnostics: 12 ==

@@ -1,0 +1,83 @@
+Rule #1 (line 1): VALID
+Rule #2 (line 2): INVALID (semantic)
+Rule #3 (line 3): INVALID (semantic)
+Rule #4 (line 4): INVALID (semantic)
+Rule #5 (line 5): INVALID (semantic)
+Rule #6 (line 6): INVALID (semantic)
+Rule #7 (line 7): INVALID (semantic)
+Rule #8 (line 8): INVALID (semantic)
+Rule #9 (line 9): VALID
+Rule #10 (line 10): INVALID (semantic)
+Rule #11 (line 11): INVALID (semantic)
+Rule #12 (line 12): VALID
+Rule #13 (line 13): VALID
+
+Rule #2 | Line 2 | SEMANTIC ERROR
+  Field:    sid
+  Rule has no sid option
+  Every rule must declare exactly one numeric signature id (sid)
+
+Rule #3 | Line 3 | SEMANTIC ERROR
+  Field:    sid
+  Rule has no sid option
+  Every rule must declare exactly one numeric signature id (sid)
+
+Rule #4 | Line 4 | SEMANTIC ERROR
+  Field:    sid
+  Value:    102
+  Duplicate sid option inside the rule
+  A rule must declare exactly one sid
+
+Rule #5 | Line 5 | SEMANTIC ERROR
+  Field:    sid
+  Value:    abc
+  sid value is not numeric
+  sid must be a positive integer
+
+Rule #6 | Line 6 | SEMANTIC ERROR
+  Field:    sid
+  Value:    abc
+  sid value is not numeric
+  sid must be a positive integer
+
+Rule #7 | Line 7 | SEMANTIC ERROR
+  Field:    sid
+  Value:    0
+  sid must be greater than zero
+  sid 0 is reserved; signature ids start at 1
+
+Rule #8 | Line 8 | SEMANTIC ERROR
+  Field:    rev
+  Value:    xyz
+  rev value is not numeric
+  rev must be a non-negative integer
+
+Rule #9 | Line 9 | SEMANTIC WARNING
+  Field:    msg
+  msg string is empty
+  An empty msg makes alerts unreadable; give the rule a description
+
+Rule #10 | Line 10 | SEMANTIC ERROR
+  Field:    content
+  content string is empty
+  An empty content match can never match meaningfully
+
+Rule #11 | Line 11 | SEMANTIC ERROR
+  Field:    foo
+  Value:    bar
+  Unknown option key 'foo'
+  Supported option keys in this grammar subset: msg, sid, rev, content
+
+Rule #12 | Line 12 | SEMANTIC WARNING
+  Field:    SrcPort
+  Value:    80
+  Source port is meaningless for the icmp protocol
+  ICMP has no ports; use 'any' for ports in icmp rules
+
+Rule #12 | Line 12 | SEMANTIC WARNING
+  Field:    DstPort
+  Value:    443
+  Destination port is meaningless for the icmp protocol
+  ICMP has no ports; use 'any' for ports in icmp rules
+
+== rules: 13 | valid: 4 | syntax-invalid: 0 | semantic-invalid: 9 | diagnostics: 12 ==

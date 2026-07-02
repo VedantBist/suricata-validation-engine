@@ -1,0 +1,13 @@
+alert tcp any any -> any 80 (msg:"valid baseline"; sid:100; rev:1;)
+alert tcp any any -> any 80 (msg:"missing sid";)
+alert tcp any any -> any 80
+alert tcp any any -> any 80 (msg:"two sids"; sid:101; sid:102;)
+alert tcp any any -> any 80 (msg:"string sid"; sid:"abc";)
+alert tcp any any -> any 80 (msg:"ident sid"; sid:abc;)
+alert tcp any any -> any 80 (msg:"zero sid"; sid:0;)
+alert tcp any any -> any 80 (msg:"bad rev"; sid:103; rev:xyz;)
+alert tcp any any -> any 80 (msg:""; sid:104;)
+alert tcp any any -> any 80 (msg:"empty content"; content:""; sid:105;)
+alert tcp any any -> any 80 (foo:"bar"; msg:"unknown key"; sid:106;)
+alert icmp any 80 -> any 443 (msg:"ports on icmp"; sid:107;)
+alert tcp any any -> any 80 (msg:"still fine after all that"; sid:108; rev:2;)

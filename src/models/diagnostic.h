@@ -23,8 +23,10 @@ typedef struct Diagnostic {
     int rule_number;
     int line;
     int column;
-    char *expected;
-    char *found;
+    char *expected;     /* syntax only: role vocabulary ("SrcIP") */
+    char *found;        /* syntax only: offending token */
+    char *field;        /* semantic only: rule field ("DstPort", "sid") */
+    char *value;        /* semantic only: offending value ("70000") */
     char *message;
     char *explanation;
 } Diagnostic;

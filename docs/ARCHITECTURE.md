@@ -301,11 +301,20 @@ silently dropped — so syntax diagnostics can report
 time, so scanning always makes progress.
 
 ### Semantic errors
-Emitted only by `semantic/` validators operating on completed Rule objects:
-port range (1–65535), IP octet ranges, CIDR mask bounds (/0–/32), duplicate
-SID (via registry), missing SID. Multiple semantic diagnostics per rule are
-allowed (unlike syntax) — the structure is trustworthy, so we can report
-every bad value at once.
+Emitted only by `semantic/` validators operating on completed Rule objects,
+inside `dispatch_rule_accepted` — after a clean parse, before the rule is
+freed. Organization: an ordered table of independent passes
+(`validators/header.c`, `validators/options.c`, `validators/rule.c`);
+adding a check never touches the parser. Checks: port range (1–65535), IP
+octet ranges, CIDR mask bounds (/0–/32), sid presence/uniqueness/numeric/
+positive (cross-rule duplicates via the SID registry), rev numeric, empty
+msg/content, unknown option keys, icmp/port coherence. Multiple semantic
+diagnostics per rule are allowed (unlike syntax) — the structure is
+trustworthy, so we can report every bad value at once. Severity matters:
+WARNINGs (empty msg, ports on icmp) do not invalidate the rule.
+Semantic diagnostics carry Field/Value instead of Expected/Found and never
+depend on parser state. `--syntax-only` disables the layer entirely
+(structural lint; also isolates parser golden tests).
 
 ---
 

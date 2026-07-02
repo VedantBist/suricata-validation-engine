@@ -1,0 +1,8 @@
+alert tcp 192.168.1.7 1024 -> 10.0.0.0/8 443 (msg:"all header values valid"; sid:1;)
+alert tcp 999.1.1.1 any -> any 80 (msg:"bad src octet"; sid:2;)
+alert tcp 256.0.0.1 any -> any 80 (msg:"octet just over"; sid:3;)
+alert udp any any -> 10.0.0.0/33 53 (msg:"cidr prefix too big"; sid:4;)
+alert udp 300.300.300.300/16 any -> any 53 (msg:"cidr with bad octets"; sid:5;)
+alert tcp any any -> any 70000 (msg:"dst port too big"; sid:6;)
+alert tcp any 0 -> any 80 (msg:"src port zero"; sid:7;)
+alert tcp any 65535 -> 255.255.255.255 1 (msg:"boundary values all valid"; sid:8;)

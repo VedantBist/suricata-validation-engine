@@ -4,6 +4,22 @@ One section per phase. Records the grammar subset in force, token inventory,
 and any documented conflict exceptions (with counterexample analysis).
 The zero-conflict policy from ARCHITECTURE.md §7 applies.
 
+## Phase 5 — grammar delta: generic option keys (implemented)
+
+One production added (zero conflicts preserved):
+
+```
+option_key → OPTION_KEY | IDENT
+```
+
+Rationale: "whether a key is supported" is a semantic question, not a
+structural one. `foo:"bar";` now parses cleanly and the semantic layer
+reports the unknown key — previously it was (mis)classified as a syntax
+error. Classifier consequence: option-key positions now include IDENT in
+their expected sets, so the key-position classes outrank the value class
+in the priority chain (a value position after ':' never contains
+OPTION_KEY, so the ordering is unambiguous).
+
 ## Phase 4 — recursive options grammar (implemented)
 
 Conflict status: **zero** (unchanged; bison -Werror).

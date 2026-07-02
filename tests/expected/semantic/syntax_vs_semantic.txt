@@ -1,0 +1,38 @@
+Rule #1 (line 2): INVALID (semantic)
+Rule #2 (line 3): INVALID (syntax)
+Rule #3 (line 4): VALID
+Rule #4 (line 5): INVALID (semantic)
+Rule #5 (line 6): INVALID (syntax)
+Rule #6 (line 7): VALID
+
+Rule #1 | Line 2 | SEMANTIC ERROR
+  Field:    DstPort
+  Value:    70000
+  Destination port exceeds the valid range (1-65535)
+  TCP/UDP ports are 16-bit values from 1 to 65535
+
+Rule #2 | Line 3, Col 11 | SYNTAX ERROR
+  Expected: SrcIP
+  Found:    ->
+  Source IP missing after protocol
+  Acceptable tokens here: any, IP address, CIDR block, variable
+
+Rule #4 | Line 5 | SEMANTIC ERROR
+  Field:    SrcIP
+  Value:    999.1.1.1
+  Source IP contains an IP octet outside the valid range (0-255)
+  Each dotted segment of an IPv4 address must be between 0 and 255
+
+Rule #4 | Line 5 | SEMANTIC ERROR
+  Field:    DstPort
+  Value:    70000
+  Destination port exceeds the valid range (1-65535)
+  TCP/UDP ports are 16-bit values from 1 to 65535
+
+Rule #5 | Line 6, Col 54 | SYNTAX ERROR
+  Expected: SEMICOLON
+  Found:    option keyword "sid"
+  Missing semicolon after option value
+  Acceptable tokens here: ;
+
+== rules: 6 | valid: 2 | syntax-invalid: 2 | semantic-invalid: 2 | diagnostics: 5 ==

@@ -28,7 +28,10 @@ void diagnostic_free(Diagnostic *d)
     }
     free(d->expected);
     free(d->found);
+    free(d->field);
+    free(d->value);
     free(d->message);
     free(d->explanation);
-    d->expected = d->found = d->message = d->explanation = NULL;
+    d->expected = d->found = d->field = d->value = NULL;
+    d->message = d->explanation = NULL;
 }

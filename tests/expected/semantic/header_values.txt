@@ -1,0 +1,46 @@
+Rule #1 (line 1): VALID
+Rule #2 (line 2): INVALID (semantic)
+Rule #3 (line 3): INVALID (semantic)
+Rule #4 (line 4): INVALID (semantic)
+Rule #5 (line 5): INVALID (semantic)
+Rule #6 (line 6): INVALID (semantic)
+Rule #7 (line 7): INVALID (semantic)
+Rule #8 (line 8): VALID
+
+Rule #2 | Line 2 | SEMANTIC ERROR
+  Field:    SrcIP
+  Value:    999.1.1.1
+  Source IP contains an IP octet outside the valid range (0-255)
+  Each dotted segment of an IPv4 address must be between 0 and 255
+
+Rule #3 | Line 3 | SEMANTIC ERROR
+  Field:    SrcIP
+  Value:    256.0.0.1
+  Source IP contains an IP octet outside the valid range (0-255)
+  Each dotted segment of an IPv4 address must be between 0 and 255
+
+Rule #4 | Line 4 | SEMANTIC ERROR
+  Field:    DstIP
+  Value:    10.0.0.0/33
+  Destination IP has a CIDR prefix outside the valid range (/0-/32)
+  An IPv4 CIDR mask must be between /0 and /32
+
+Rule #5 | Line 5 | SEMANTIC ERROR
+  Field:    SrcIP
+  Value:    300.300.300.300/16
+  Source IP contains an IP octet outside the valid range (0-255)
+  Each dotted segment of an IPv4 address must be between 0 and 255
+
+Rule #6 | Line 6 | SEMANTIC ERROR
+  Field:    DstPort
+  Value:    70000
+  Destination port exceeds the valid range (1-65535)
+  TCP/UDP ports are 16-bit values from 1 to 65535
+
+Rule #7 | Line 7 | SEMANTIC ERROR
+  Field:    SrcPort
+  Value:    0
+  Source port exceeds the valid range (1-65535)
+  TCP/UDP ports are 16-bit values from 1 to 65535
+
+== rules: 8 | valid: 2 | syntax-invalid: 0 | semantic-invalid: 6 | diagnostics: 6 ==
