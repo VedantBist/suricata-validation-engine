@@ -17,11 +17,16 @@ parser stub owning the token inventory, lexical diagnostics
 (INVALID_TOKEN + unterminated strings), stress tier green at 10k rules /
 220k tokens under UBSan + leak check.
 
-## Phase 3 — Minimal parser + recovery backbone
-`grammar.y` for the simplified rule grammar (header + flat options), the
-`error → EOL` recovery production, per-rule VALID/INVALID verdicts, exit
-codes. The key deliverable: a file with broken rule N still validates rules
-N+1..end. Golden tests for recovery.
+## Phase 3 — Minimal parser + recovery backbone  ✅
+`grammar.y` for the header-only rule grammar (options deferred entirely to
+Phase 5), the `error → EOL` recovery production, per-rule VALID/INVALID
+verdicts, exit codes. The key deliverable: a file with broken rule N still
+validates rules N+1..end. Golden tests for recovery. Shipped with:
+parser-state-aware Expected/Found diagnostics (parse.error custom +
+parse.lac full + progress cursor), Rule model with ownership transfer and
+%destructor discipline, streaming dispatch seam (core/dispatch.h),
+parser stress tier (10k rules, 2% malformed: valid+invalid==total,
+diagnostics==invalid, leaks clean).
 
 ## Phase 4 — Diagnostics engine
 `%define parse.error custom`, Expected-vs-Found capture from parser state,
@@ -29,10 +34,11 @@ token-set → role vocabulary mapping ("SrcIP"), explanation table, structured
 report format (Rule # / Line # / Expected / Found / Error). Lexical
 diagnostics (bad char, unterminated string).
 
-## Phase 5 — Rule model + recursive options
-Rule/Option structs built by grammar actions, ownership transfer to core,
-streaming free-after-validation, recursive/nested option parsing. Sanitizer-
-clean under the stress generator.
+## Phase 5 — Options parsing (flat + recursive)
+Option structs built by grammar actions, the options block added to the rule
+grammar (flat `key:value;` list first, then recursive/nested forms), Rule
+model extended with the option list. Sanitizer/leaks-clean under the stress
+generator.
 
 ## Phase 6 — Semantic validation
 Validator pass over Rule objects: port range, IP octets, CIDR mask, missing

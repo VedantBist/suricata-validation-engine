@@ -1,37 +1,79 @@
-/* Parser stub — Phase 2.
+/* Suricata rule parser — Phase 3 grammar (see docs/GRAMMAR.md).
  *
- * This file exists to OWN the token inventory: Bison generates the canonical
- * token enumeration (build/gen/parser.tab.h) that the lexer, token dump, and
- * all future modules include. No hand-written token enum exists anywhere —
- * one definition, one owner.
+ * Scope: header-only rules — Action Protocol SrcIP SrcPort Direction DstIP
+ * DstPort, terminated by EOL. Options join in Phase 5; semantic validation
+ * of values is Phase 6 and never happens here.
  *
- * The grammar body is a deliberate placeholder. Real productions, the
- * `error EOL` recovery backbone, and `%define parse.error custom` arrive in
- * Phase 3/4 per docs/ROADMAP.md. yyparse() is not called in Phase 2.
+ * Contracts this file owns:
+ *   - RECOVERY: the `error TOK_EOL` production is the panic-mode backbone.
+ *     A malformed line discards tokens up to its EOL (destructors free their
+ *     values), records exactly one syntax diagnostic, resets error state
+ *     (yyerrok) and the progress cursor, and parsing resumes at the next
+ *     line. Parsing never terminates on malformed input.
+ *   - DIAGNOSTICS: %define parse.error custom routes syntax errors through
+ *     yyreport_syntax_error, which reads the *parser tables* (expected token
+ *     set via yypcontext, exact thanks to parse.lac full) — Expected/Found
+ *     is never guessed from the input. This file classifies the expected
+ *     set structurally; all prose lives in diagnostics/.
+ *   - OWNERSHIP: grammar actions build the Rule; dispatch transfers it to
+ *     core, which frees it (streaming — nothing accumulates here).
+ *   - ZERO CONFLICTS: bison runs with -Werror; any conflict fails the build.
+ *
+ * The parser never prints and never judges values.
  */
 
 %code requires {
+    #include "models/rule.h"
     #include "models/source_location.h"
     typedef struct ParserContext ParserContext;
 }
 
 %code {
     #include <stdio.h>
+    #include <stdlib.h>
+
+    #include "core/dispatch.h"
+    #include "diagnostics/diagnostics.h"
     #include "models/context.h"
 
     int yylex(void);
     static void yyerror(ParserContext *ctx, const char *msg);
+    /* yyreport_syntax_error is forward-declared by bison itself (after the
+     * yypcontext_t typedef); we only provide the definition in the epilogue. */
+
+    /* Default location propagation plus this project's extra channel:
+     * rule_number must flow to reduced nonterminals (bison's built-in
+     * default only knows the four standard fields). */
+    #define YYLLOC_DEFAULT(Cur, Rhs, N)                                  \
+        do {                                                             \
+            if (N) {                                                     \
+                (Cur).first_line   = YYRHSLOC(Rhs, 1).first_line;        \
+                (Cur).first_column = YYRHSLOC(Rhs, 1).first_column;      \
+                (Cur).last_line    = YYRHSLOC(Rhs, N).last_line;         \
+                (Cur).last_column  = YYRHSLOC(Rhs, N).last_column;       \
+                (Cur).rule_number  = YYRHSLOC(Rhs, 1).rule_number;       \
+            } else {                                                     \
+                (Cur) = YYRHSLOC(Rhs, 0);                                \
+            }                                                            \
+        } while (0)
 }
 
-/* Token semantic value: the lexeme for value-bearing tokens (heap-owned,
- * allocated by the lexer), NULL for fixed-spelling tokens. */
-%define api.value.type {char *}
+%union {
+    char *str;          /* lexeme of value-bearing tokens (heap-owned) */
+    int discrim;        /* RuleAction / RuleProtocol / RuleDirection */
+    Endpoint endpoint;
+    PortSpec port;
+    Rule *rule;
+}
 
+%define parse.error custom
+%define parse.lac full
 %locations
 %define api.location.type {SrcSpan}
 %parse-param {ParserContext *ctx}
 
-/* ---- Token inventory (Phase 2 scope) ---- */
+/* ---- Token inventory (owned here; lexer and tooling include the
+ *      generated enum — no hand-written token ids exist anywhere) ---- */
 
 /* Actions */
 %token TOK_ALERT   "alert"
@@ -58,35 +100,218 @@
 %token TOK_COMMA     ","
 
 /* Value-bearing tokens */
-%token TOK_IP          "IP address"
-%token TOK_CIDR        "CIDR block"
-%token TOK_PORT        "port"
-%token TOK_NUMBER      "number"
-%token TOK_VARIABLE    "variable"
-%token TOK_STRING      "string"
-%token TOK_OPTION_KEY  "option keyword"
-%token TOK_IDENT       "identifier"
+%token <str> TOK_IP          "IP address"
+%token <str> TOK_CIDR        "CIDR block"
+%token <str> TOK_PORT        "port"
+%token <str> TOK_NUMBER      "number"
+%token <str> TOK_VARIABLE    "variable"
+%token <str> TOK_STRING      "string"
+%token <str> TOK_OPTION_KEY  "option keyword"
+%token <str> TOK_IDENT       "identifier"
 
 /* Structural */
 %token TOK_EOL "end of line"
 
 /* Lexical-error carrier: unclassifiable input reaches the parser as a real
- * token so Phase 4 diagnostics can report `Found: INVALID_TOKEN "@"` from
- * genuine parser state instead of losing the information in the lexer. */
-%token TOK_INVALID "invalid token"
+ * token so diagnostics report `Found: invalid token "@"` from genuine
+ * parser state instead of losing the information in the lexer. */
+%token <str> TOK_INVALID "invalid token"
+
+%type <discrim>  action protocol direction
+%type <endpoint> address src_address dst_address
+%type <port>     port_spec src_port dst_port
+%type <rule>     rule header
+
+/* Memory discipline for panic-mode recovery: every semantic value bison
+ * discards while skipping to EOL must be released here, or the leak checker
+ * flags every malformed rule. */
+%destructor { free($$); }           <str>
+%destructor { free($$.text); }      <endpoint> <port>
+%destructor { rule_free($$); }      <rule>
 
 %%
 
-/* Placeholder start symbol — replaced by the real rule grammar in Phase 3. */
-file:
-    %empty
+rule_file:
+      %empty
+    | rule_file line
+    ;
+
+/* One line, one verdict. Both productions end at TOK_EOL — the recovery
+ * anchor the lexer guarantees for every token-bearing line (synthetic at
+ * EOF). Recovery can therefore never cross a line boundary: lexer and
+ * parser resynchronize at exactly the same point. */
+line:
+      rule TOK_EOL
+        {
+            ctx->progress = PROGRESS_LINE_START;
+            dispatch_rule_accepted(ctx, $1);
+        }
+    | error TOK_EOL
+        {
+            /* The syntax diagnostic was already recorded by
+             * yyreport_syntax_error at the moment of the error; this action
+             * only accounts for the failed rule and re-arms the parser.
+             * yyerrok immediately: without it bison would suppress error
+             * reports until 3 tokens shift, swallowing an early error on
+             * the very next line. */
+            ctx->progress = PROGRESS_LINE_START;
+            dispatch_rule_rejected(ctx, @2.rule_number, @2.first_line);
+            yyerrok;
+        }
+    ;
+
+rule:
+      action header
+        {
+            $$ = $2;
+            $$->action = (RuleAction)$1;
+            $$->span = @$;
+        }
+    ;
+
+/* header carries the Rule under construction (it owns six of the seven
+ * fields); `rule` completes it with the action. Kept as its own nonterminal
+ * so the grammar reads like the specification. */
+header:
+      protocol src_address src_port direction dst_address dst_port
+        {
+            $$ = rule_create();
+            $$->protocol = (RuleProtocol)$1;
+            $$->src_ip = $2;
+            $$->src_port = $3;
+            $$->direction = (RuleDirection)$4;
+            $$->dst_ip = $5;
+            $$->dst_port = $6;
+        }
+    ;
+
+action:
+      TOK_ALERT  { $$ = ACTION_ALERT; ctx->progress = PROGRESS_ACTION; }
+    | TOK_DROP   { $$ = ACTION_DROP;  ctx->progress = PROGRESS_ACTION; }
+    | TOK_PASS   { $$ = ACTION_PASS;  ctx->progress = PROGRESS_ACTION; }
+    ;
+
+protocol:
+      TOK_TCP    { $$ = PROTO_TCP;  ctx->progress = PROGRESS_PROTOCOL; }
+    | TOK_UDP    { $$ = PROTO_UDP;  ctx->progress = PROGRESS_PROTOCOL; }
+    | TOK_ICMP   { $$ = PROTO_ICMP; ctx->progress = PROGRESS_PROTOCOL; }
+    ;
+
+direction:
+      TOK_ARROW  { $$ = DIRECTION_TO;    ctx->progress = PROGRESS_DIRECTION; }
+    | TOK_BIDIR  { $$ = DIRECTION_BIDIR; ctx->progress = PROGRESS_DIRECTION; }
+    ;
+
+/* src_/dst_ wrappers exist solely to advance the progress cursor with
+ * positional knowledge; the token shapes are shared via address/port_spec.
+ * Unit productions in fixed sequence — no conflicts. */
+src_address:
+      address    { $$ = $1; ctx->progress = PROGRESS_SRC_IP; }
+    ;
+
+dst_address:
+      address    { $$ = $1; ctx->progress = PROGRESS_DST_IP; }
+    ;
+
+src_port:
+      port_spec  { $$ = $1; ctx->progress = PROGRESS_SRC_PORT; }
+    ;
+
+dst_port:
+      port_spec  { $$ = $1; ctx->progress = PROGRESS_DST_PORT; }
+    ;
+
+address:
+      TOK_ANY       { $$.kind = ENDPOINT_ANY;      $$.text = NULL; }
+    | TOK_IP        { $$.kind = ENDPOINT_IP;       $$.text = $1;   }
+    | TOK_CIDR      { $$.kind = ENDPOINT_CIDR;     $$.text = $1;   }
+    | TOK_VARIABLE  { $$.kind = ENDPOINT_VARIABLE; $$.text = $1;   }
+    ;
+
+port_spec:
+      TOK_ANY       { $$.kind = PORT_ANY;    $$.text = NULL; }
+    | TOK_PORT      { $$.kind = PORT_NUMBER; $$.text = $1;   }
     ;
 
 %%
 
+/* Custom syntax-error report: the single place parser state becomes a
+ * diagnostic. Reads the exact expected-token set from the parser tables
+ * (LAC makes it precise), classifies it structurally, and hands everything
+ * to diagnostics/ — which owns all wording. Returns 0: the error was
+ * consumed; recovery proceeds via `error TOK_EOL`. */
+static int yyreport_syntax_error(const yypcontext_t *yyctx, ParserContext *ctx)
+{
+    SrcSpan span = *yypcontext_location(yyctx);
+
+    enum { MAX_EXPECTED = 12 };
+    yysymbol_kind_t expected[MAX_EXPECTED];
+    int n = yypcontext_expected_tokens(yyctx, expected, MAX_EXPECTED);
+    if (n < 0) {
+        n = 0;
+    }
+
+    /* Structural classification of the expected set. Priority order is
+     * irrelevant in the Phase 3 grammar (each error state expects exactly
+     * one token family); check specific families before the EOL-only case
+     * so a future grammar with mixed sets degrades sanely. */
+    ExpectedClass klass = EXPECT_OTHER;
+    int saw_eol = 0;
+    for (int i = 0; i < n; i++) {
+        switch (expected[i]) {
+        case YYSYMBOL_TOK_ALERT:
+        case YYSYMBOL_TOK_DROP:
+        case YYSYMBOL_TOK_PASS:
+            klass = EXPECT_ACTION;
+            break;
+        case YYSYMBOL_TOK_TCP:
+        case YYSYMBOL_TOK_UDP:
+        case YYSYMBOL_TOK_ICMP:
+            klass = EXPECT_PROTOCOL;
+            break;
+        case YYSYMBOL_TOK_IP:
+        case YYSYMBOL_TOK_CIDR:
+        case YYSYMBOL_TOK_VARIABLE:
+            klass = EXPECT_ADDRESS;
+            break;
+        case YYSYMBOL_TOK_PORT:
+            klass = EXPECT_PORT;
+            break;
+        case YYSYMBOL_TOK_ARROW:
+        case YYSYMBOL_TOK_BIDIR:
+            klass = EXPECT_DIRECTION;
+            break;
+        case YYSYMBOL_TOK_EOL:
+            saw_eol = 1;
+            break;
+        default:
+            /* TOK_ANY is ambiguous (address or port set) — the specific
+             * members above decide; EOL-only handled below. */
+            break;
+        }
+    }
+    if (klass == EXPECT_OTHER && saw_eol) {
+        klass = EXPECT_END_OF_RULE;
+    }
+
+    const char *expected_names[MAX_EXPECTED];
+    for (int i = 0; i < n; i++) {
+        expected_names[i] = yysymbol_name(expected[i]);
+    }
+
+    yysymbol_kind_t lookahead = yypcontext_token(yyctx);
+    const char *found_symbol =
+        lookahead == YYSYMBOL_YYEMPTY ? NULL : yysymbol_name(lookahead);
+
+    diag_syntax_error(&ctx->diagnostics, span, ctx->progress, klass,
+                      expected_names, n, found_symbol, ctx->found_text);
+    return 0;
+}
+
+/* With parse.error custom, bison only calls yyerror for non-syntax
+ * failures (e.g. "memory exhausted"). Engine-level, not input-level. */
 static void yyerror(ParserContext *ctx, const char *msg)
 {
-    /* Phase 3+: route into the diagnostics engine. Never printed from here. */
     (void)ctx;
-    (void)msg;
+    fprintf(stderr, "parser: %s\n", msg);
 }

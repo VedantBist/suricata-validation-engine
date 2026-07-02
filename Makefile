@@ -44,7 +44,9 @@ else
 endif
 
 ifeq ($(MODE),debug)
-  CFLAGS  := $(CFLAGS_COMMON) -g -O0 $(SANFLAGS)
+  # YYDEBUG compiles in bison's shift/reduce/recovery trace; enable it at
+  # runtime with SV_PARSER_TRACE=1 (recovery debugging — see core/validate.c).
+  CFLAGS  := $(CFLAGS_COMMON) -g -O0 -DYYDEBUG=1 $(SANFLAGS)
   LDFLAGS := $(SANFLAGS)
 else ifeq ($(MODE),release)
   CFLAGS  := $(CFLAGS_COMMON) -O2 -DNDEBUG

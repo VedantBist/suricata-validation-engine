@@ -20,10 +20,12 @@ Error: Source IP missing after protocol
 
 ## Status
 
-Phase 2 complete — lexer foundation: full Phase-2 token inventory,
-line/column/rule tracking, explicit EOL recovery anchors, lexical
-diagnostics, token-dump inspection mode, golden-file test suite (10k-rule
-stress tier green under UBSan + leak check).
+Phase 3 complete — parser core and recovery backbone: header-only rule
+grammar (zero conflicts, enforced), `error EOL` panic-mode recovery,
+parser-state-aware Expected/Found diagnostics (`parse.error custom` +
+`parse.lac full`), streamed per-rule VALID/INVALID verdicts, Rule model
+with strict ownership. Options parsing arrives in Phase 5; semantic
+validation in Phase 6.
 See [docs/ROADMAP.md](docs/ROADMAP.md) for the phased plan.
 
 ## Build & run
@@ -31,8 +33,10 @@ See [docs/ROADMAP.md](docs/ROADMAP.md) for the phased plan.
 ```sh
 make                 # debug build (UBSan) -> build/bin/suricata-validate
 make release         # optimized build
-make test            # golden-file suite; STRESS=1 make test adds the 10k tier
+make test            # golden-file suite; STRESS=1 make test adds the 10k tiers
+build/bin/suricata-validate samples/header_only.rules   # validate (default)
 build/bin/suricata-validate --dump-tokens samples/demo.rules
+SV_PARSER_TRACE=1 build/bin/suricata-validate file      # recovery trace (debug builds)
 ```
 
 Requires flex and bison ≥ 3.6 (macOS: `brew install bison`; the Makefile

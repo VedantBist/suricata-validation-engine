@@ -4,6 +4,53 @@ One section per phase. Records the grammar subset in force, token inventory,
 and any documented conflict exceptions (with counterexample analysis).
 The zero-conflict policy from ARCHITECTURE.md §7 applies.
 
+## Phase 3 — header grammar + recovery backbone (implemented)
+
+Conflict status: **zero** shift/reduce, **zero** reduce/reduce (bison -Werror).
+
+```
+rule_file   → ε | rule_file line
+line        → rule EOL
+            | error EOL          ← panic-mode recovery, sync on EOL; yyerrok
+rule        → action header
+header      → protocol src_address src_port direction dst_address dst_port
+action      → alert | drop | pass
+protocol    → tcp | udp | icmp
+src_address → address            ← unit wrappers advance the progress cursor
+dst_address → address              with positional knowledge; token shapes
+src_port    → port_spec            stay shared
+dst_port    → port_spec
+address     → any | IP | CIDR | VARIABLE
+port_spec   → any | PORT
+```
+
+Error-handling configuration of record:
+
+- `%define parse.error custom` — syntax errors route through
+  `yyreport_syntax_error`, which reads the expected-token set from the
+  parser tables via the yypcontext API. Expected/Found is parser state,
+  never input-pattern matching.
+- `%define parse.lac full` — lookahead correction. Without LAC, LALR default
+  reductions execute before the error is detected and the expected set can
+  include impossible tokens; with LAC the parser verifies the lookahead is
+  eventually shiftable first, so expected sets are exact and errors are
+  reported at the first offending token.
+- LAC consequence for the progress cursor: a unit reduction whose follow set
+  excludes the offending lookahead never runs its action, so at error time
+  the cursor holds the last reduction that had a viable lookahead.
+  Diagnostics therefore maps Src/Dst positions with `<=` thresholds
+  (see role_for in diagnostics.c), not stage equality.
+- Cascade prevention: during recovery bison discards tokens (destructors
+  free their values) without reporting; `yyerrok` at the recovery EOL
+  re-arms reporting for the next line. Net effect: at most one syntax
+  diagnostic per line, and an error on line N can never suppress an early
+  error on line N+1.
+- `%destructor` on every value-carrying type — panic-mode discards must not
+  leak (verified by the stress tier under leaks).
+
+Rules with options blocks are syntax errors in this subset
+(`Expected: end of rule`) until Phase 5.
+
 ## Phase 2 — token inventory (implemented)
 
 Owned by `src/parser/grammar.y` (stub): Bison generates the canonical enum in

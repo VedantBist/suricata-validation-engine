@@ -7,10 +7,10 @@ extern int yylex(void);
 
 int lexer_next(Token *out)
 {
-    yylval = NULL;
+    yylval.str = NULL;
     int kind = yylex();
     out->kind = kind;
-    out->lexeme = yylval;
+    out->lexeme = yylval.str;
     out->span = yylloc;
     return kind;
 }

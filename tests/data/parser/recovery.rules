@@ -1,0 +1,10 @@
+alert tcp any any -> any 80
+drop udp any any -> any 53
+alert tcp -> any 80
+pass icmp any any <> any any
+alert tcp 10.1.2.3 any -> any 443
+drop udp $HOME_NET 5353 -> any any
+alert icmp any any -> 192.168.0.0/16 any
+pass tcp any 22 -> any 2222
+drop icmp 172.16.1.1 any <> $EXTERNAL_NET any
+alert udp any any -> any 123

@@ -38,6 +38,7 @@ static void stamp(void);
 static int  tok_fixed(int kind);
 static int  tok_value(int kind);
 static void mark_rule(void);
+static void remember_text(void);
 static int  end_of_line(void);
 %}
 
@@ -98,7 +99,8 @@ IP4     {DIGIT}+\.{DIGIT}+\.{DIGIT}+\.{DIGIT}+
   * Escapes (\" etc.) pass through uninterpreted — value semantics are not
   * the lexer's business. */
 \"([^"\\\r\n]|\\[^\r\n])*\"    { mark_rule();
-                                 yylval = xstrndup(yytext + 1, (size_t)yyleng - 2);
+                                 remember_text();
+                                 yylval.str = xstrndup(yytext + 1, (size_t)yyleng - 2);
                                  return TOK_STRING; }
 
  /* Unterminated string: closed automatically at end of line so one missing
@@ -106,8 +108,9 @@ IP4     {DIGIT}+\.{DIGIT}+\.{DIGIT}+\.{DIGIT}+
   * downstream structure checking can continue; the LEXICAL diagnostic marks
   * the line as broken. */
 \"([^"\\\r\n]|\\[^\r\n])*      { mark_rule();
+                                 remember_text();
                                  diag_lexical_unterminated_string(&L->diagnostics, yylloc);
-                                 yylval = xstrndup(yytext + 1, (size_t)yyleng - 1);
+                                 yylval.str = xstrndup(yytext + 1, (size_t)yyleng - 1);
                                  return TOK_STRING; }
 
 {ID}                    { return tok_value(TOK_IDENT); }
@@ -117,19 +120,21 @@ IP4     {DIGIT}+\.{DIGIT}+\.{DIGIT}+\.{DIGIT}+
   * `Found: INVALID_TOKEN "@"` from genuine state. One char at a time —
   * scanning always makes progress. */
 .                       { mark_rule();
-                          yylval = xstrndup(yytext, (size_t)yyleng);
-                          diag_lexical_invalid_char(&L->diagnostics, yylloc, yylval);
+                          remember_text();
+                          yylval.str = xstrndup(yytext, (size_t)yyleng);
+                          diag_lexical_invalid_char(&L->diagnostics, yylloc, yylval.str);
                           return TOK_INVALID; }
 
 <<EOF>>                 { yylloc.first_line = yylloc.last_line = L->line;
                           yylloc.first_column = yylloc.last_column = L->column;
                           yylloc.rule_number = L->rule_count;
+                          L->found_text[0] = '\0';
                           if (L->line_has_tokens) {
                               /* Last line has no trailing newline: emit the
                                * synthetic EOL so the recovery anchor exists. */
                               L->lines_seen++;
                               L->line_has_tokens = 0;
-                              yylval = NULL;
+                              yylval.str = NULL;
                               return TOK_EOL;
                           }
                           yyterminate(); }
@@ -160,17 +165,28 @@ static void mark_rule(void)
     yylloc.rule_number = L->rule_count;
 }
 
+/* Snapshot of the current token's raw text into the context — when a syntax
+ * error is reported, the offending lookahead is always the last token
+ * returned, so diagnostics can show `Found: port "70000"` without owning
+ * the lexeme. */
+static void remember_text(void)
+{
+    snprintf(L->found_text, sizeof(L->found_text), "%s", yytext);
+}
+
 static int tok_fixed(int kind)
 {
     mark_rule();
-    yylval = NULL;
+    remember_text();
+    yylval.str = NULL;
     return kind;
 }
 
 static int tok_value(int kind)
 {
     mark_rule();
-    yylval = xstrndup(yytext, (size_t)yyleng);
+    remember_text();
+    yylval.str = xstrndup(yytext, (size_t)yyleng);
     return kind;
 }
 
@@ -184,7 +200,8 @@ static int end_of_line(void)
     L->column = 1;
     L->line_has_tokens = 0;
     L->paren_depth = 0;
-    yylval = NULL;
+    L->found_text[0] = '\0';
+    yylval.str = NULL;
     return had_tokens;
 }
 

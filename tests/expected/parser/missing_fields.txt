@@ -1,0 +1,52 @@
+Rule #1 (line 1): INVALID (syntax)
+Rule #2 (line 2): INVALID (syntax)
+Rule #3 (line 3): INVALID (syntax)
+Rule #4 (line 4): INVALID (syntax)
+Rule #5 (line 5): INVALID (syntax)
+Rule #6 (line 6): INVALID (syntax)
+Rule #7 (line 7): INVALID (syntax)
+Rule #8 (line 8): VALID
+
+Rule #1 | Line 1, Col 1 | SYNTAX ERROR
+  Expected: Action
+  Found:    tcp
+  Rule must start with an action (alert, drop, or pass)
+  Acceptable tokens here: end of file, alert, drop, pass
+
+Rule #2 | Line 2, Col 7 | SYNTAX ERROR
+  Expected: Protocol
+  Found:    any
+  Protocol missing or invalid after action
+  Acceptable tokens here: tcp, udp, icmp
+
+Rule #3 | Line 3, Col 15 | SYNTAX ERROR
+  Expected: SrcPort
+  Found:    ->
+  Source port missing after source IP
+  Acceptable tokens here: any, port
+
+Rule #4 | Line 4, Col 19 | SYNTAX ERROR
+  Expected: Direction
+  Found:    any
+  Direction operator (-> or <>) missing after source port
+  Acceptable tokens here: ->, <>
+
+Rule #5 | Line 5, Col 22 | SYNTAX ERROR
+  Expected: DstIP
+  Found:    port "80"
+  Destination IP missing after direction
+  Acceptable tokens here: any, IP address, CIDR block, variable
+
+Rule #6 | Line 6, Col 25 | SYNTAX ERROR
+  Expected: DstPort
+  Found:    end of line
+  Destination port missing after destination IP
+  Acceptable tokens here: any, port
+
+Rule #7 | Line 7, Col 29 | SYNTAX ERROR
+  Expected: end of rule
+  Found:    (
+  Unexpected content after the destination port (rule options are not part of the current grammar subset)
+  Acceptable tokens here: end of line
+
+== rules: 8 | valid: 1 | invalid: 7 | diagnostics: 7 ==

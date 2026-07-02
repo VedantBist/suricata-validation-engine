@@ -1,5 +1,11 @@
 #include "reporting/report_text.h"
 
+void report_rule_verdict(FILE *out, int rule_number, int line, int valid)
+{
+    fprintf(out, "Rule #%d (line %d): %s\n", rule_number, line,
+            valid ? "VALID" : "INVALID (syntax)");
+}
+
 void report_diagnostics(FILE *out, const DiagList *list)
 {
     for (size_t i = 0; i < list->count; i++) {

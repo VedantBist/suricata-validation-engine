@@ -1,7 +1,30 @@
 #ifndef MODELS_CONTEXT_H
 #define MODELS_CONTEXT_H
 
+#include <stdio.h>
+
 #include "diagnostics/diagnostics.h"
+
+/* Progress cursor: the furthest reduction the current rule completed.
+ * Updated by grammar actions, reset at every EOL. Diagnostics combines this
+ * with the table-derived expected-token class to name positional roles
+ * ("SrcIP" vs "DstIP" — identical token sets, different positions). This is
+ * parser reduction state, not input-pattern guessing.
+ *
+ * Note: with lookahead correction (parse.lac full) a unit reduction whose
+ * follow set excludes the offending token never executes, so at error time
+ * the cursor holds the last reduction with a viable lookahead — mappings in
+ * diagnostics use <=/>= thresholds, never equality on a single stage. */
+typedef enum RuleProgress {
+    PROGRESS_LINE_START = 0,
+    PROGRESS_ACTION,
+    PROGRESS_PROTOCOL,
+    PROGRESS_SRC_IP,
+    PROGRESS_SRC_PORT,
+    PROGRESS_DIRECTION,
+    PROGRESS_DST_IP,
+    PROGRESS_DST_PORT
+} RuleProgress;
 
 /* All mutable per-run state, owned by core and threaded through the engine.
  * The lexer is the ONLY writer of the position fields (single source of
@@ -26,6 +49,17 @@ typedef struct ParserContext {
     int paren_depth;
     int lines_seen;
     DiagList diagnostics;
+
+    /* Parser state (Phase 3) */
+    int progress;               /* RuleProgress cursor for diagnostics */
+    char found_text[160];       /* raw text of the last token the lexer
+                                   returned == the offending lookahead when
+                                   a syntax error is reported */
+
+    /* Run results (written by core's dispatch layer) */
+    int valid_count;
+    int invalid_count;
+    FILE *report_out;           /* verdict stream; NULL outside validate mode */
 } ParserContext;
 
 ParserContext *context_create(void);

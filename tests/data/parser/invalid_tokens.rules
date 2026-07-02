@@ -1,0 +1,4 @@
+alert tcp any @ -> any 80
+!!
+alert tcp any any 8.8.8.8 any -> any 80
+alert tcp any any -> any 80

@@ -130,8 +130,14 @@ Key architectural decisions:
   single seam to upgrade — reentrant Flex/Bison accept the same struct.)
 - **Diagnostics are data.** Nothing in `src/` prints during analysis. Every
   problem becomes a `Diagnostic` record in the context; `reporting` renders
-  them once, after the run (or streamed later — the renderer decides, not the
-  parser).
+  them once, after the run. Per-rule verdicts stream as rules complete —
+  emitted by core's dispatch layer through `reporting`, never by the parser.
+- **The dispatch seam.** One deliberate inversion of the core→parser arrow:
+  grammar actions call `core/dispatch.h` (`dispatch_rule_accepted` /
+  `dispatch_rule_rejected`) as each line completes. This is what keeps the
+  pipeline streaming — the parser hands each Rule off immediately instead of
+  accumulating results for core to collect. The interface is two functions;
+  semantic validation (Phase 6) hooks inside `dispatch_rule_accepted`.
 
 ---
 
@@ -251,13 +257,17 @@ are freed by core at shutdown.
   exact set of token kinds acceptable in the current state, plus the offending
   lookahead. This is ground truth — Expected/Found is *derived from parser
   state*, never guessed by pattern-matching the input.
-- The diagnostics module translates raw token sets into role vocabulary:
-  e.g. the set {ANY, IP, CIDR, VARIABLE} appearing after a protocol maps to
-  the single human term "SrcIP". A small mapping table owns this; the grammar
-  file stays free of message text.
-- An explanation table keyed by (expected-role, found-token) supplies the
-  narrative line ("Source IP missing after protocol"), with a generic fallback
-  when no curated entry exists.
+- `%define parse.lac full` (lookahead correction) makes those expected sets
+  exact: the parser verifies a lookahead is eventually shiftable before
+  committing reductions, so errors surface at the first offending token and
+  the expected list never contains impossible tokens.
+- The parser classifies the expected set structurally (action / protocol /
+  address / port / direction / end-of-rule); the diagnostics module turns
+  that into role vocabulary and narrative. Src vs Dst positions have
+  identical token sets, so a *progress cursor* (RuleProgress in the context,
+  advanced by grammar reduction actions, reset at every EOL) disambiguates —
+  still parser reduction state, never input guessing. Structure from the
+  parser, language from diagnostics: the grammar file stays free of prose.
 
 ### Recovery strategy (the core requirement)
 - The lexer emits an explicit `EOL` token — newlines are grammar-visible, not
