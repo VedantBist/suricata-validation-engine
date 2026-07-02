@@ -1,12 +1,13 @@
 #ifndef MODELS_RULE_H
 #define MODELS_RULE_H
 
+#include "models/option.h"
 #include "models/source_location.h"
 
-/* Structured result of parsing one rule — Phase 3 scope: header only
- * (Action Protocol SrcIP SrcPort Direction DstIP DstPort). Options join in
- * Phase 5. Deliberately a flat struct, not an AST hierarchy: semantic
- * validation (Phase 6) needs fields, not trees. */
+/* Structured result of parsing one rule: header (Action Protocol SrcIP
+ * SrcPort Direction DstIP DstPort) plus an optional options block (Phase 4).
+ * Deliberately a flat struct, not an AST hierarchy: semantic validation
+ * needs fields, not trees. */
 
 typedef enum RuleAction {
     ACTION_ALERT,
@@ -58,7 +59,8 @@ typedef struct Rule {
     RuleDirection direction;
     Endpoint dst_ip;
     PortSpec dst_port;
-    SrcSpan span;   /* provenance: rule number + line range */
+    OptionList *options;   /* NULL when the rule has no options block */
+    SrcSpan span;          /* provenance: rule number + line range */
 } Rule;
 
 /* Ownership contract (ARCHITECTURE.md §5): parser actions construct the

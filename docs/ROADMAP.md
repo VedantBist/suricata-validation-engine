@@ -28,27 +28,29 @@ parse.lac full + progress cursor), Rule model with ownership transfer and
 parser stress tier (10k rules, 2% malformed: valid+invalid==total,
 diagnostics==invalid, leaks clean).
 
-## Phase 4 — Diagnostics engine
-`%define parse.error custom`, Expected-vs-Found capture from parser state,
-token-set → role vocabulary mapping ("SrcIP"), explanation table, structured
-report format (Rule # / Line # / Expected / Found / Error). Lexical
-diagnostics (bad char, unterminated string).
+*(The diagnostics engine originally planned as its own phase shipped inside
+Phase 3 — parse.error custom, LAC, role vocabulary, and the structured
+report format all arrived with the parser core. Numbering below reflects
+the actual phasing.)*
 
-## Phase 5 — Options parsing (flat + recursive)
-Option structs built by grammar actions, the options block added to the rule
-grammar (flat `key:value;` list first, then recursive/nested forms), Rule
-model extended with the option list. Sanitizer/leaks-clean under the stress
-generator.
+## Phase 4 — Recursive options parsing  ✅
+Options block added to the rule grammar (left-recursive `key:value;` list),
+structured Option/OptionList models with a one-direction ownership chain,
+full %destructor coverage for recovery-time cleanup, option-region
+diagnostics classes (COLON/Value/SEMICOLON/OptionKey/close). Recovery stays
+line-level on the Phase 3 EOL anchor. Stress tier upgraded to full rules
+with recursive option lists and option-level corruption — leak-free.
 
-## Phase 6 — Semantic validation
-Validator pass over Rule objects: port range, IP octets, CIDR mask, missing
-SID, duplicate SID (registry). SEMANTIC diagnostics distinct from SYNTAX in
-reports. Semantic golden tests.
+## Phase 5 — Semantic validation
+Validator pass over Rule objects (hooks into dispatch_rule_accepted): port
+range, IP octets, CIDR mask, missing SID, duplicate SID (registry),
+option-value typing (sid/rev want numbers). SEMANTIC diagnostics distinct
+from SYNTAX in reports. Semantic golden tests.
 
-## Phase 7 — Advanced grammar
-Variables ($HOME_NET), negation, port ranges and lists, bracketed IP lists.
-Grammar grows; recovery and diagnostics architecture unchanged.
+## Phase 6 — Advanced grammar
+Negation, port ranges and lists, bracketed IP lists. Grammar grows;
+recovery and diagnostics architecture unchanged.
 
-## Phase 8 — Hardening & polish
+## Phase 7 — Hardening & polish
 10k-rule stress runs with timing budget, max-errors cap, summary statistics,
 optional JSON renderer, docs completion.

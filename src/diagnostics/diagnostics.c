@@ -110,10 +110,35 @@ static void role_for(ExpectedClass klass, int progress,
         *role = "Direction";
         *narrative = "Direction operator (-> or <>) missing after source port";
         return;
+    case EXPECT_OPTIONS_OR_END:
+        *role = "Options or end of rule";
+        *narrative = "Unexpected content after the destination port "
+                     "(only an options block or end of line may follow)";
+        return;
+    case EXPECT_OPTION_KEY:
+        *role = "OptionKey";
+        *narrative = "Option missing after '(' "
+                     "(supported keys: msg, sid, rev, content)";
+        return;
+    case EXPECT_OPTION_OR_CLOSE:
+        *role = "OptionKey or ')'";
+        *narrative = "Expected another option or ')' closing the options block";
+        return;
+    case EXPECT_COLON:
+        *role = "COLON";
+        *narrative = "Colon missing after option key";
+        return;
+    case EXPECT_OPTION_VALUE:
+        *role = "Value";
+        *narrative = "Option value missing after colon";
+        return;
+    case EXPECT_SEMICOLON:
+        *role = "SEMICOLON";
+        *narrative = "Missing semicolon after option value";
+        return;
     case EXPECT_END_OF_RULE:
         *role = "end of rule";
-        *narrative = "Unexpected content after the destination port "
-                     "(rule options are not part of the current grammar subset)";
+        *narrative = "Unexpected content after the options block";
         return;
     case EXPECT_OTHER:
         break;

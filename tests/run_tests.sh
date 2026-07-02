@@ -101,10 +101,10 @@ if [ "${STRESS:-0}" = "1" ]; then
     fi
 
     echo
-    echo "== stress: parser (10k header-only rules, 2% malformed) =="
+    echo "== stress: parser (10k rules with recursive options, 2% malformed) =="
     stress_parser="$ROOT/build/stress_parser.rules"
     python3 "$ROOT/tests/data/stress/generate_stress.py" 10000 \
-        --header-only --error-rate 0.02 > "$stress_parser" 2>/dev/null
+        --error-rate 0.02 > "$stress_parser" 2>/dev/null
     start=$(date +%s)
     out="$("$BIN" --validate "$stress_parser")"
     rc=$?

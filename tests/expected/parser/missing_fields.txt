@@ -44,9 +44,9 @@ Rule #6 | Line 6, Col 25 | SYNTAX ERROR
   Acceptable tokens here: any, port
 
 Rule #7 | Line 7, Col 29 | SYNTAX ERROR
-  Expected: end of rule
-  Found:    (
-  Unexpected content after the destination port (rule options are not part of the current grammar subset)
-  Acceptable tokens here: end of line
+  Expected: Options or end of rule
+  Found:    port "90"
+  Unexpected content after the destination port (only an options block or end of line may follow)
+  Acceptable tokens here: (, end of line
 
 == rules: 8 | valid: 1 | invalid: 7 | diagnostics: 7 ==

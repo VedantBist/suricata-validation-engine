@@ -1,0 +1,7 @@
+alert tcp any any -> any 80 (msg:"HTTP"; sid:1001;)
+drop udp any any -> any 53 (msg:"DNS query"; sid:1002; rev:2;)
+pass icmp any any <> any any (sid:1003;)
+alert tcp $HOME_NET any -> 172.16.0.0/12 443 (msg:"TLS"; content:"GET"; sid:1004; rev:1;)
+alert tcp any any -> any 8080 (content:"POST"; msg:"proxy traffic"; sid:1005; rev:abc;)
+drop tcp any any -> any 21 (msg:"deep list"; content:"USER"; content:"PASS"; content:"RETR"; content:"STOR"; sid:1006; rev:3;)
+alert udp 10.0.0.0/8 any -> any 123

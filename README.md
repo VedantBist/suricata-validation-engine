@@ -20,12 +20,12 @@ Error: Source IP missing after protocol
 
 ## Status
 
-Phase 3 complete — parser core and recovery backbone: header-only rule
-grammar (zero conflicts, enforced), `error EOL` panic-mode recovery,
-parser-state-aware Expected/Found diagnostics (`parse.error custom` +
-`parse.lac full`), streamed per-rule VALID/INVALID verdicts, Rule model
-with strict ownership. Options parsing arrives in Phase 5; semantic
-validation in Phase 6.
+Phase 4 complete — recursive options parsing: full rule structure
+`action header (key:value; ...)` with structured Option models, leak-free
+recursive cleanup under panic recovery, and option-region Expected/Found
+diagnostics. The Phase 3 backbone (zero-conflict grammar, `error EOL`
+line-level recovery, streaming one-rule-at-a-time lifecycle) is unchanged
+and re-verified byte-identical. Semantic validation arrives in Phase 5.
 See [docs/ROADMAP.md](docs/ROADMAP.md) for the phased plan.
 
 ## Build & run

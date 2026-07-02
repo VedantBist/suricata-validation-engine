@@ -1,0 +1,85 @@
+Rule #1 (line 1): INVALID (syntax)
+Rule #2 (line 2): INVALID (syntax)
+Rule #3 (line 3): INVALID (syntax)
+Rule #4 (line 4): INVALID (syntax)
+Rule #5 (line 5): INVALID (syntax)
+Rule #6 (line 6): INVALID (syntax)
+Rule #7 (line 7): INVALID (syntax)
+Rule #8 (line 8): INVALID (syntax)
+Rule #9 (line 9): INVALID (syntax)
+Rule #10 (line 10): VALID
+
+Rule #1 | Line 1, Col 41 | SYNTAX ERROR
+  Expected: SEMICOLON
+  Found:    option keyword "sid"
+  Missing semicolon after option value
+  Acceptable tokens here: ;
+
+Rule #2 | Line 2, Col 45 | SYNTAX ERROR
+  Expected: COLON
+  Found:    ;
+  Colon missing after option key
+  Acceptable tokens here: :
+
+Rule #3 | Line 3, Col 34 | SYNTAX ERROR
+  Expected: Value
+  Found:    ;
+  Option value missing after colon
+  Acceptable tokens here: number, string, identifier
+
+Rule #4 | Line 4, Col 42 | LEXICAL ERROR
+  Found:    @
+  Invalid character '@'
+  The character does not belong to any recognized Suricata token class; scanning continued so the rest of the line was still checked
+
+Rule #4 | Line 4, Col 42 | SYNTAX ERROR
+  Expected: OptionKey or ')'
+  Found:    invalid token "@"
+  Expected another option or ')' closing the options block
+  Acceptable tokens here: ), option keyword
+
+Rule #4 | Line 4, Col 43 | LEXICAL ERROR
+  Found:    @
+  Invalid character '@'
+  The character does not belong to any recognized Suricata token class; scanning continued so the rest of the line was still checked
+
+Rule #4 | Line 4, Col 44 | LEXICAL ERROR
+  Found:    @
+  Invalid character '@'
+  The character does not belong to any recognized Suricata token class; scanning continued so the rest of the line was still checked
+
+Rule #5 | Line 5, Col 30 | SYNTAX ERROR
+  Expected: OptionKey
+  Found:    )
+  Option missing after '(' (supported keys: msg, sid, rev, content)
+  Acceptable tokens here: option keyword
+
+Rule #6 | Line 6, Col 48 | SYNTAX ERROR
+  Expected: OptionKey or ')'
+  Found:    end of line
+  Expected another option or ')' closing the options block
+  Acceptable tokens here: ), option keyword
+
+Rule #7 | Line 7, Col 30 | SYNTAX ERROR
+  Expected: OptionKey
+  Found:    identifier "foo"
+  Option missing after '(' (supported keys: msg, sid, rev, content)
+  Acceptable tokens here: option keyword
+
+Rule #8 | Line 8, Col 34 | LEXICAL ERROR
+  Unterminated string literal
+  The string was closed automatically at the end of the line so that following rules are not swallowed by the open quote
+
+Rule #8 | Line 8, Col 56 | SYNTAX ERROR
+  Expected: SEMICOLON
+  Found:    end of line
+  Missing semicolon after option value
+  Acceptable tokens here: ;
+
+Rule #9 | Line 9, Col 50 | SYNTAX ERROR
+  Expected: end of rule
+  Found:    identifier "extra"
+  Unexpected content after the options block
+  Acceptable tokens here: end of line
+
+== rules: 10 | valid: 1 | invalid: 9 | diagnostics: 13 ==

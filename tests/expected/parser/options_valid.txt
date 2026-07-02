@@ -1,0 +1,9 @@
+Rule #1 (line 1): VALID
+Rule #2 (line 2): VALID
+Rule #3 (line 3): VALID
+Rule #4 (line 4): VALID
+Rule #5 (line 5): VALID
+Rule #6 (line 6): VALID
+Rule #7 (line 7): VALID
+
+== rules: 7 | valid: 7 | invalid: 0 | diagnostics: 0 ==

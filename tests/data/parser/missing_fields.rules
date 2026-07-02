@@ -4,5 +4,5 @@ alert tcp any -> any 80
 alert tcp any any any 80
 alert tcp any any -> 80
 alert tcp any any -> any
-alert tcp any any -> any 80 (msg:"options arrive in Phase 5"; sid:1;)
+alert tcp any any -> any 80 90
 alert tcp any any -> any 80

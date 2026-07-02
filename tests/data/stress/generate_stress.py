@@ -40,17 +40,26 @@ def port(rng):
     return "any" if rng.randrange(3) == 0 else str(rng.randrange(1, 65536))
 
 
-def corrupt(fields, rng):
-    """Structural corruption only — never introduces unlexable characters."""
-    kind = rng.randrange(4)
+def corrupt(fields, rng, has_options):
+    """Structural corruption only — never introduces unlexable characters,
+    and every corruption is guaranteed syntactically INVALID (so the runner
+    can assert diagnostics == invalid rules)."""
+    kind = rng.randrange(6 if has_options else 4)
     if kind == 0:
-        del fields[rng.randrange(1, len(fields))]   # drop a header field
+        # drop a header field — never the options block, which would leave
+        # a perfectly valid header-only rule
+        last = len(fields) - (1 if has_options else 0)
+        del fields[rng.randrange(1, last)]
     elif kind == 1:
         del fields[0]                               # drop the action
     elif kind == 2:
         fields.insert(rng.randrange(len(fields)), "->")  # stray direction
-    else:
+    elif kind == 3:
         fields.append(fields[-1])                   # duplicated trailing field
+    elif kind == 4:
+        fields[-1] = fields[-1].replace(";", "", 1)  # first semicolon gone
+    else:
+        fields[-1] = fields[-1][:-1]                 # closing ')' gone
     return fields
 
 
@@ -80,12 +89,17 @@ def main():
         fields = [action, proto, endpoint(rng), port(rng), direction,
                   endpoint(rng), port(rng)]
         if not args.header_only:
+            # 0..5 extra content options exercise the recursive list at
+            # varying depths (up to ~8 reductions per rule)
+            extras = "".join(
+                f' content:"blob-{i}";' for i in range(rng.randrange(6))
+            )
             fields.append(
-                f'(msg:"stress rule {emitted}"; sid:{100000 + emitted}; '
-                f"rev:{rng.randrange(1, 5)};)"
+                f'(msg:"stress rule {emitted}"; sid:{100000 + emitted};'
+                f"{extras} rev:{rng.randrange(1, 5)};)"
             )
         if args.error_rate > 0 and rng.random() < args.error_rate:
-            fields = corrupt(fields, rng)
+            fields = corrupt(fields, rng, not args.header_only)
             malformed += 1
         print(" ".join(fields))
 

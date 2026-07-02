@@ -23,6 +23,7 @@
  */
 
 %code requires {
+    #include "models/option.h"
     #include "models/rule.h"
     #include "models/source_location.h"
     typedef struct ParserContext ParserContext;
@@ -63,6 +64,9 @@
     int discrim;        /* RuleAction / RuleProtocol / RuleDirection */
     Endpoint endpoint;
     PortSpec port;
+    OptionValue optval; /* option value under reduction */
+    Option *opt;
+    OptionList *optlist;
     Rule *rule;
 }
 
@@ -120,14 +124,22 @@
 %type <discrim>  action protocol direction
 %type <endpoint> address src_address dst_address
 %type <port>     port_spec src_port dst_port
+%type <optval>   option_value
+%type <opt>      option
+%type <optlist>  options option_list
 %type <rule>     rule header
 
 /* Memory discipline for panic-mode recovery: every semantic value bison
  * discards while skipping to EOL must be released here, or the leak checker
- * flags every malformed rule. */
-%destructor { free($$); }           <str>
-%destructor { free($$.text); }      <endpoint> <port>
-%destructor { rule_free($$); }      <rule>
+ * flags every malformed rule. Each ownership level frees exactly what it
+ * owns (lexeme -> Option -> OptionList -> Rule), so whichever level sits on
+ * the stack when recovery pops it is released exactly once — no leaks, no
+ * double frees, regardless of how deep the recursive reduction got. */
+%destructor { free($$); }              <str>
+%destructor { free($$.text); }         <endpoint> <port> <optval>
+%destructor { option_free($$); }       <opt>
+%destructor { option_list_free($$); }  <optlist>
+%destructor { rule_free($$); }         <rule>
 
 %%
 
@@ -160,11 +172,21 @@ line:
         }
     ;
 
+/* Options are optional as two explicit productions (no empty nonterminal):
+ * after `action header` the lookahead decides — EOL reduces the bare rule,
+ * '(' shifts into the options block. LALR-disjoint, zero conflicts. */
 rule:
       action header
         {
             $$ = $2;
             $$->action = (RuleAction)$1;
+            $$->span = @$;
+        }
+    | action header options
+        {
+            $$ = $2;
+            $$->action = (RuleAction)$1;
+            $$->options = $3;
             $$->span = @$;
         }
     ;
@@ -233,6 +255,45 @@ port_spec:
     | TOK_PORT      { $$.kind = PORT_NUMBER; $$.text = $1;   }
     ;
 
+/* ---- Options block (Phase 4) --------------------------------------------
+ * Left-recursive list: each option reduces and appends as soon as its ';'
+ * arrives, so the parser stack stays flat no matter how many options a rule
+ * has — recursion in the grammar, not in memory. Recovery stays line-level
+ * (`error EOL`): a malformed option invalidates its rule as a unit, which
+ * is what keeps the one-diagnostic-per-line policy intact; the recovery
+ * anchor is unchanged from Phase 3. */
+
+options:
+      TOK_LPAREN option_list TOK_RPAREN   { $$ = $2; }
+    ;
+
+option_list:
+      option
+        {
+            $$ = option_list_create();
+            option_list_append($$, $1);
+        }
+    | option_list option
+        {
+            option_list_append($1, $2);
+            $$ = $1;
+        }
+    ;
+
+option:
+      TOK_OPTION_KEY TOK_COLON option_value TOK_SEMICOLON
+        {
+            /* takes ownership of the key lexeme and the value text */
+            $$ = option_create($1, $3.kind, $3.text, @$);
+        }
+    ;
+
+option_value:
+      TOK_STRING    { $$.kind = OPTVAL_STRING; $$.text = $1; }
+    | TOK_NUMBER    { $$.kind = OPTVAL_NUMBER; $$.text = $1; }
+    | TOK_IDENT     { $$.kind = OPTVAL_IDENT;  $$.text = $1; }
+    ;
+
 %%
 
 /* Custom syntax-error report: the single place parser state becomes a
@@ -251,48 +312,60 @@ static int yyreport_syntax_error(const yypcontext_t *yyctx, ParserContext *ctx)
         n = 0;
     }
 
-    /* Structural classification of the expected set. Priority order is
-     * irrelevant in the Phase 3 grammar (each error state expects exactly
-     * one token family); check specific families before the EOL-only case
-     * so a future grammar with mixed sets degrades sanely. */
-    ExpectedClass klass = EXPECT_OTHER;
-    int saw_eol = 0;
+    /* Structural classification of the expected set: collect which token
+     * families the tables allow, then decide. Header families are mutually
+     * exclusive per state; the options region introduces the two genuinely
+     * mixed sets ({OPTION_KEY, ')'} after a completed option and
+     * {'(', EOL} after the destination port), which get their own classes.
+     * TOK_ANY is deliberately ignored — it appears in both the address and
+     * port sets; the specific members decide. */
+    struct {
+        unsigned action : 1, protocol : 1, address : 1, port : 1, dir : 1;
+        unsigned lparen : 1, rparen : 1, colon : 1, semi : 1;
+        unsigned optkey : 1, value : 1, eol : 1;
+    } saw = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
     for (int i = 0; i < n; i++) {
         switch (expected[i]) {
         case YYSYMBOL_TOK_ALERT:
         case YYSYMBOL_TOK_DROP:
-        case YYSYMBOL_TOK_PASS:
-            klass = EXPECT_ACTION;
-            break;
+        case YYSYMBOL_TOK_PASS:       saw.action = 1;   break;
         case YYSYMBOL_TOK_TCP:
         case YYSYMBOL_TOK_UDP:
-        case YYSYMBOL_TOK_ICMP:
-            klass = EXPECT_PROTOCOL;
-            break;
+        case YYSYMBOL_TOK_ICMP:       saw.protocol = 1; break;
         case YYSYMBOL_TOK_IP:
         case YYSYMBOL_TOK_CIDR:
-        case YYSYMBOL_TOK_VARIABLE:
-            klass = EXPECT_ADDRESS;
-            break;
-        case YYSYMBOL_TOK_PORT:
-            klass = EXPECT_PORT;
-            break;
+        case YYSYMBOL_TOK_VARIABLE:   saw.address = 1;  break;
+        case YYSYMBOL_TOK_PORT:       saw.port = 1;     break;
         case YYSYMBOL_TOK_ARROW:
-        case YYSYMBOL_TOK_BIDIR:
-            klass = EXPECT_DIRECTION;
-            break;
-        case YYSYMBOL_TOK_EOL:
-            saw_eol = 1;
-            break;
-        default:
-            /* TOK_ANY is ambiguous (address or port set) — the specific
-             * members above decide; EOL-only handled below. */
-            break;
+        case YYSYMBOL_TOK_BIDIR:      saw.dir = 1;      break;
+        case YYSYMBOL_TOK_LPAREN:     saw.lparen = 1;   break;
+        case YYSYMBOL_TOK_RPAREN:     saw.rparen = 1;   break;
+        case YYSYMBOL_TOK_COLON:      saw.colon = 1;    break;
+        case YYSYMBOL_TOK_SEMICOLON:  saw.semi = 1;     break;
+        case YYSYMBOL_TOK_OPTION_KEY: saw.optkey = 1;   break;
+        case YYSYMBOL_TOK_STRING:
+        case YYSYMBOL_TOK_NUMBER:
+        case YYSYMBOL_TOK_IDENT:      saw.value = 1;    break;
+        case YYSYMBOL_TOK_EOL:        saw.eol = 1;      break;
+        default:                                        break;
         }
     }
-    if (klass == EXPECT_OTHER && saw_eol) {
-        klass = EXPECT_END_OF_RULE;
-    }
+
+    ExpectedClass klass =
+        saw.action                ? EXPECT_ACTION
+        : saw.protocol            ? EXPECT_PROTOCOL
+        : saw.address             ? EXPECT_ADDRESS
+        : saw.port                ? EXPECT_PORT
+        : saw.dir                 ? EXPECT_DIRECTION
+        : saw.colon               ? EXPECT_COLON
+        : saw.value               ? EXPECT_OPTION_VALUE
+        : saw.semi                ? EXPECT_SEMICOLON
+        : saw.optkey && saw.rparen ? EXPECT_OPTION_OR_CLOSE
+        : saw.optkey              ? EXPECT_OPTION_KEY
+        : saw.lparen && saw.eol   ? EXPECT_OPTIONS_OR_END
+        : saw.eol                 ? EXPECT_END_OF_RULE
+                                  : EXPECT_OTHER;
 
     const char *expected_names[MAX_EXPECTED];
     for (int i = 0; i < n; i++) {

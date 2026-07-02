@@ -1,0 +1,10 @@
+alert tcp any any -> any 80 (msg:"HTTP" sid:1001;)
+alert tcp any any -> any 80 (msg:"HTTP"; sid;)
+alert tcp any any -> any 80 (msg:; sid:1;)
+alert tcp any any -> any 80 (msg:"HTTP"; @@@;)
+alert tcp any any -> any 80 ()
+alert tcp any any -> any 80 (msg:"HTTP"; sid:1;
+alert tcp any any -> any 80 (foo:"unknown key"; sid:1;)
+alert tcp any any -> any 80 (msg:"unterminated; sid:9;)
+alert tcp any any -> any 80 (msg:"HTTP"; sid:1;) extra
+alert tcp any any -> any 80 (msg:"recovered"; sid:1001;)

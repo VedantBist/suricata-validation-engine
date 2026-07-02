@@ -196,10 +196,13 @@ Rule {
 }
 ```
 
-**Option** — one `key:value;` pair inside `( ... )`.
+**Option** — one `key:value;` pair inside `( ... )` (implemented Phase 4).
 ```
-Option { key, value, line, column }
+Option { key, value_kind (STRING|NUMBER|IDENT), value, span }
 ```
+Ownership chain is one-directional: lexeme → Option → OptionList → Rule.
+Each parser %destructor frees exactly its own level, which is what makes
+panic-mode recovery leak-free at any reduction depth.
 
 **Diagnostic** — one problem, fully self-describing (renderable without any
 other context).

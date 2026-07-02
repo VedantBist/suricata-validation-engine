@@ -4,6 +4,44 @@ One section per phase. Records the grammar subset in force, token inventory,
 and any documented conflict exceptions (with counterexample analysis).
 The zero-conflict policy from ARCHITECTURE.md §7 applies.
 
+## Phase 4 — recursive options grammar (implemented)
+
+Conflict status: **zero** (unchanged; bison -Werror).
+
+```
+rule        → action header
+            | action header options      ← lookahead-disjoint: EOL reduces,
+options     → ( option_list )              '(' shifts; no empty nonterminal
+option_list → option
+            | option_list option         ← left recursion: each option
+option      → OPTION_KEY : option_value ;  reduces+appends at its ';', stack
+option_value→ STRING | NUMBER | IDENT      stays flat at any list length
+```
+
+Decisions of record:
+
+- **Recovery granularity stays line-level.** No `error` production inside
+  the options block: a malformed option invalidates its rule as a unit and
+  recovery syncs on the same EOL anchor as Phase 3. This is what preserves
+  the one-syntax-diagnostic-per-line policy; intra-block resynchronization
+  (e.g. `error ;`) would report multiple errors per line and is explicitly
+  out of scope.
+- **Ownership chain, one direction:** lexeme → Option (option_create) →
+  OptionList (append) → Rule (attach). Each %destructor frees exactly its
+  own level, so panic recovery releases whatever was on the stack —
+  in-flight value, half-built option, partially appended list, or completed
+  header Rule — exactly once. Verified leak-free under recovery-heavy
+  stress.
+- **Option-region diagnostics classes:** COLON, Value, SEMICOLON, OptionKey,
+  "OptionKey or ')'", "Options or end of rule", end-of-rule — all derived
+  from the table-extracted expected sets; the two genuinely mixed sets
+  ({OPTION_KEY, ')'} and {'(', EOL}) get dedicated classes rather than
+  progress-cursor disambiguation.
+- Unknown option keys (`foo:`) lex as IDENT and fail structurally with the
+  supported-keys hint; unterminated strings keep the Phase 2 guarantee
+  (closed at EOL + lexical diagnostic) and then surface the structural
+  error (`Expected: SEMICOLON, Found: end of line`).
+
 ## Phase 3 — header grammar + recovery backbone (implemented)
 
 Conflict status: **zero** shift/reduce, **zero** reduce/reduce (bison -Werror).

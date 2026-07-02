@@ -38,13 +38,19 @@ void diag_lexical_unterminated_string(DiagList *list, SrcSpan span);
  * language from here. */
 
 typedef enum ExpectedClass {
-    EXPECT_ACTION,        /* alert | drop | pass */
-    EXPECT_PROTOCOL,      /* tcp | udp | icmp */
-    EXPECT_ADDRESS,       /* any | IP | CIDR | variable (Src vs Dst by progress) */
-    EXPECT_PORT,          /* any | PORT            (Src vs Dst by progress) */
-    EXPECT_DIRECTION,     /* -> | <> */
-    EXPECT_END_OF_RULE,   /* only EOL is acceptable */
-    EXPECT_OTHER          /* fallback: report the raw token list */
+    EXPECT_ACTION,          /* alert | drop | pass */
+    EXPECT_PROTOCOL,        /* tcp | udp | icmp */
+    EXPECT_ADDRESS,         /* any | IP | CIDR | variable (Src vs Dst by progress) */
+    EXPECT_PORT,            /* any | PORT            (Src vs Dst by progress) */
+    EXPECT_DIRECTION,       /* -> | <> */
+    EXPECT_OPTIONS_OR_END,  /* ( | EOL — after the destination port */
+    EXPECT_OPTION_KEY,      /* option keyword — right after '(' */
+    EXPECT_OPTION_OR_CLOSE, /* option keyword | ) — after a completed option */
+    EXPECT_COLON,           /* : — after an option key */
+    EXPECT_OPTION_VALUE,    /* string | number | identifier — after ':' */
+    EXPECT_SEMICOLON,       /* ; — after an option value */
+    EXPECT_END_OF_RULE,     /* only EOL is acceptable — after ')' */
+    EXPECT_OTHER            /* fallback: report the raw token list */
 } ExpectedClass;
 
 /* expected_names: token spellings straight from the parser tables

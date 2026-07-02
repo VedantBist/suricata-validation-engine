@@ -18,5 +18,6 @@ void rule_free(Rule *rule)
     free(rule->src_port.text);
     free(rule->dst_ip.text);
     free(rule->dst_port.text);
+    option_list_free(rule->options);
     free(rule);
 }
